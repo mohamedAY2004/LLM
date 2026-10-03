@@ -21,7 +21,7 @@
 
 <p class="kicker">Lesson 2 of 6 · Word2Vec (2013) · about 15 minutes</p>
 <h1>Meaning from the company a word keeps</h1>
-<p class="lede">Deck 03, slide 5 says Word2Vec turns meaning into geometry and shows king − man + woman ≈ queen. It leaves out the surprising part: nobody ever tells the model what a word means. The vectors are a <em>by-product</em> of a prediction task that nobody actually cares about.</p>
+<p class="lede">Word2Vec is usually summed up as "meaning as geometry," with the famous king − man + woman ≈ queen. That summary leaves out the surprising part: nobody ever tells the model what a word means. The vectors are a <em>by-product</em> of a prediction task that nobody actually cares about.</p>
 
 <div class="quiz-set" data-title="Warm-up from lesson 1">
 <script type="application/json">
@@ -60,7 +60,7 @@
 <p>With learning rate 0.5: <span class="mono">e<sub>doctor</sub> ← [0.8, 0.1] + 0.5·0.32·[0.9, 0.2] − 0.5·0.42·[−0.5, 0.7] = [1.05, −0.02]</span>. Recompute: σ(doctor · patient) rises from 0.68 to 0.72, and σ(doctor · banana) falls from 0.42 to 0.37. That is all a single training step does.<span class="sidenote">These are the standard SGNS gradients. <a href="https://web.stanford.edu/~jurafsky/slp3/5.pdf">SLP3 §5.5</a> derives them. The context rows <var>c</var> are updated the same way, and this example skips that.</span></p>
 
 <h2>3 · The key idea: why "doctor" ends up next to "physician"</h2>
-<p>This is the step the slides skip. "Doctor" and "physician" rarely appear in the same window, so no training step ever pulls them <em>toward each other</em>. But:</p>
+<p>This is the step most summaries skip. "Doctor" and "physician" rarely appear in the same window, so no training step ever pulls them <em>toward each other</em>. But:</p>
 <ul>
   <li>Every time "doctor" appears near "patient", <var>e</var><sub>doctor</sub> moves toward <var>c</var><sub>patient</sub>.</li>
   <li>Every time "physician" appears near "patient", <var>e</var><sub>physician</sub> moves toward the <em>same</em> <var>c</var><sub>patient</sub>.</li>
@@ -108,7 +108,7 @@
 
 <div class="callout key">
   <span class="label">Remember this</span>
-  <p>Firth's "you shall know a word by the company it keeps" (deck 03, slide 5) is not a metaphor here. It is literally the gradient: <em>shared neighbours → shared pull → nearby vectors.</em> Word2Vec turns a linguistic hypothesis into an optimisation problem.</p>
+  <p>J.R. Firth's 1957 line "you shall know a word by the company it keeps" is not a metaphor here. It is literally the gradient: <em>shared neighbours → shared pull → nearby vectors.</em> Word2Vec turns a linguistic hypothesis into an optimisation problem.</p>
 </div>
 
 <p>The analogy trick (king − man + woman ≈ queen) is a by-product of the same process. When many word pairs differ in the same way (man/woman, king/queen, uncle/aunt), that difference tends to show up as a roughly consistent <em>direction</em> in the space. The "≈" matters: the result is the <em>nearest</em> word to the computed point, not an exact hit.<span class="sidenote">For what analogies really show and where they fail, see <a href="https://web.stanford.edu/~jurafsky/slp3/5.pdf">SLP3 §5.7 "Semantic properties of embeddings"</a>.</span></p>
@@ -137,7 +137,7 @@
   {"q": "What does negative sampling change about the training task?",
    "options": ["Big softmax becomes a binary classifier", "Rare words get dropped from vocabulary", "Word order inside the window matters", "Each word gets several vectors instead"],
    "answer": 0,
-   "why": "Instead of a softmax over the whole vocabulary, each step asks \"real neighbour, or random noise?\" with a sigmoid of a dot product. That is logistic regression, which you already know from deck 02."},
+   "why": "Instead of a softmax over the whole vocabulary, each step asks \"real neighbour, or random noise?\" with a sigmoid of a dot product. That is logistic regression, the same model behind many classic text classifiers."},
   {"q": "\"I sat on the river bank\" / \"the bank approved my loan\". How many vectors does Word2Vec give \"bank\"?",
    "options": ["One, shared by both senses", "Two, one for each sense", "One for every sentence occurrence", "None, because it is ambiguous"],
    "answer": 0,
@@ -146,7 +146,7 @@
 </script>
 </div>
 
-<div class="recall" data-title="Recall: explain it to a classmate">
+<div class="recall" data-title="Recall: explain it to a friend">
   <p class="prompt">In 3–4 sentences, explain how Word2Vec makes "doctor" and "physician" similar without ever being told they're synonyms. Use the words <em>neighbour</em>, <em>pull</em> and <em>shared</em>.</p>
   <template class="answer">
     <p>Word2Vec trains on a fake task: given a center word, tell real neighbours in a small window apart from random words (skip-gram with negative sampling). Each real pair <em>pulls</em> the center word's vector toward that neighbour's context vector, and each random pair pushes it away. "Doctor" and "physician" rarely appear together, but they have <em>shared</em> neighbours (patient, hospital, prescribed), so both are pulled toward the same context vectors and end up close. Similar company leads to similar vectors, which is the distributional hypothesis turned into gradient descent.</p>
@@ -159,8 +159,14 @@
 </div>
 
 <div class="ask-box">
-  <span class="label">Ask your teacher</span>
-  <p>Try asking me: <em>"Why do we need two tables E and C instead of one?"</em>, <em>"How are the negative words chosen?"</em> or <em>"Walk me through a second update step."</em></p>
+  <span class="label">Questions to take further</span>
+  <p>Try answering these before moving on:</p>
+  <ul>
+    <li>Why does Word2Vec keep two tables, E and C, instead of one?</li>
+    <li>How are the negative words chosen?</li>
+    <li>Can you work through a second update step by hand?</li>
+  </ul>
+  <p>Stuck? Talk it through with a study partner, ask an AI assistant, or post on <a href="https://www.reddit.com/r/LanguageTechnology/">r/LanguageTechnology</a>.</p>
 </div>
 
 <nav class="pager">

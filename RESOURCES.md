@@ -36,11 +36,8 @@
 - [Course: Stanford CS224N — NLP with Deep Learning](https://web.stanford.edu/class/cs224n/)
   Free slides plus a [YouTube lecture playlist (2024)](https://www.youtube.com/playlist?list=PLoROMvodv4rOaMFbaqxPDoLWjDaRAdP9D). Use for: hearing the same arc explained in lecture form.
 
-## Wisdom (Communities)
+## Communities
 - [r/LanguageTechnology](https://www.reddit.com/r/LanguageTechnology/)
   About 64K NLP developers and ML engineers; covers theory, careers and applications. Use for: "is my understanding right?" questions. (Avoid r/NLP, which is about neuro-linguistic programming.)
 - [Hugging Face Forums](https://discuss.huggingface.co/)
   Has Beginners, Models and Research categories. Use for: practical BERT and fine-tuning questions once you start using real models.
-
-## Gaps
-- No single source for Arabic-specific material (AraBERT, dialect tokenisation), which deck 02 touches on. Search for one if that becomes part of the mission.

@@ -21,15 +21,15 @@
 
 <p class="kicker">Lesson 1 of 6 · about 10 minutes</p>
 <h1>One failure at a time</h1>
-<p class="lede">Your decks treat TF-IDF, Word2Vec, RNNs, Transformers and BERT as separate topics. They are really one chain. Each step exists because the step before it broke in a specific way that you can name. Learn the chain first, and every later detail has a place to attach.</p>
+<p class="lede">Most NLP courses teach TF-IDF, Word2Vec, RNNs, Transformers and BERT as separate topics. They are really one chain. Each step exists because the step before it broke in a specific way that you can name. Learn the chain first, and every later detail has a place to attach.</p>
 
-<p>This lesson covers only the chain: five breaks and five fixes. Each of the next five lessons zooms into one link and works through the hard part the slides compress. Here, aim to be able to say <em>"X broke because ___, so Y ___"</em> for every step, from memory.</p>
+<p>This lesson covers only the chain: five breaks and five fixes. Each of the next five lessons zooms into one link and works through the hard part that summaries usually skip. Here, aim to be able to say <em>"X broke because ___, so Y ___"</em> for every step, from memory.</p>
 
-<h2>Where you already are</h2>
-<p>Decks 01–02 left you with TF-IDF: a document is a row of weighted word counts, and every vocabulary word is its own column. The decks already point to the two cracks this course follows:</p>
+<h2>Where we start</h2>
+<p>This course assumes you know TF-IDF: a document is a row of weighted word counts, and every vocabulary word is its own column. TF-IDF has two cracks, and this course follows both:</p>
 <ul>
-  <li><strong>No similarity between different words.</strong> "Doctor" vs "Physician" scores <code>0.00</code> (deck 02, slide 24). Each word is its own axis, at 90° to every other word.</li>
-  <li><strong>No order.</strong> "Not bad, very good" and "Not good, very bad" get the same vector (deck 01, slide 18). It's a bag.</li>
+  <li><strong>No similarity between different words.</strong> "Doctor" vs "physician" gets a cosine similarity of <code>0.00</code>, however related they are. Each word is its own axis, at 90° to every other word.</li>
+  <li><strong>No order.</strong> "Not bad, very good" and "Not good, very bad" get the same vector. It's a bag.</li>
 </ul>
 <p>Those two cracks turn into two separate lines of work. Keep them apart in your head. That is the single most useful idea in this lesson.</p>
 
@@ -92,7 +92,7 @@
 <ol class="chain">
   <li>
     <span class="name">TF-IDF / Bag of Words</span><span class="year">classical</span>
-    <p class="idea">A document is a vector of weighted word counts, one axis per vocabulary word. It works well for keyword search and linear classifiers (deck 02).</p>
+    <p class="idea">A document is a vector of weighted word counts, one axis per vocabulary word. It works well for keyword search and linear classifiers such as logistic-regression sentiment models.</p>
     <p class="breaks"><b>Breaks:</b> two documents are similar only if they share the <em>exact same tokens</em>, so doctor · physician = 0. Word order is lost.</p>
   </li>
   <li>
@@ -108,7 +108,7 @@
   <li>
     <span class="name">Seq2Seq + attention</span><span class="year">2014/15 · Bahdanau, Cho, Bengio</span>
     <p class="idea">Keep <em>every</em> encoder hidden state. Before writing each output word, the decoder scores all of them, turns the scores into weights with softmax, and takes a weighted average. The result is a <em>new</em> context vector for every output word.</p>
-    <p class="breaks"><b>Breaks:</b> it still runs on RNNs, so word <var>t</var> can't be processed until word <var>t</var>−1 is done. Training can't run in parallel across the sentence (deck 03, slide 6).</p>
+    <p class="breaks"><b>Breaks:</b> it still runs on RNNs, so word <var>t</var> can't be processed until word <var>t</var>−1 is done. Training can't run in parallel across the sentence.</p>
   </li>
   <li>
     <span class="name">Transformer</span><span class="year">2017 · Vaswani et al.</span>
@@ -137,7 +137,7 @@
 <div class="quiz-set" data-title="Check yourself">
 <script type="application/json">
 [
-  {"q": "Deck 02 shows cosine(\"doctor\", \"physician\") = 0.00 under TF-IDF. Which property of TF-IDF causes that?",
+  {"q": "Under TF-IDF, cosine(\"doctor\", \"physician\") = 0.00. Which property of TF-IDF causes that?",
    "options": ["Each word gets its own separate axis", "Stop words were removed before vectorizing text", "IDF weighting shrinks the rare medical words", "Cosine similarity ignores the length of vectors"],
    "answer": 0,
    "why": "Each vocabulary word is its own dimension, at 90° to every other. Two vectors overlap only where the <em>same token</em> appears, so \"doctor\" and \"physician\" can never contribute to each other's score, however related they are."},
@@ -180,8 +180,13 @@
 </div>
 
 <div class="ask-box">
-  <span class="label">Ask your teacher</span>
-  <p>Anything unclear, or want a card explained another way? Ask me (Claude) in the chat. For example: <em>"Why did RNNs have to process one word at a time?"</em> or <em>"Give me a different example of the bottleneck."</em> No question is too basic.</p>
+  <span class="label">Questions to take further</span>
+  <p>Try answering these before moving on:</p>
+  <ul>
+    <li>Why did RNNs have to process one word at a time?</li>
+    <li>Can you think of a bottleneck example outside translation?</li>
+  </ul>
+  <p>Stuck? Talk it through with a study partner, ask an AI assistant, or post on <a href="https://www.reddit.com/r/LanguageTechnology/">r/LanguageTechnology</a>. No question is too basic.</p>
 </div>
 
 <nav class="pager">

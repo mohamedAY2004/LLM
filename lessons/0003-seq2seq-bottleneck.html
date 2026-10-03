@@ -35,7 +35,7 @@
 </div>
 
 <h2>1 · The RNN in one line</h2>
-<p>You've met RNNs in deck 03 (slide 6), so here is only the part that matters:</p>
+<p>This course assumes you've seen RNNs before, so here is only the part that matters:</p>
 <p class="eq"><var>h</var><sub>t</sub> = <var>f</var>( <var>h</var><sub>t−1</sub>, <var>x</var><sub>t</sub> )<span class="note">The hidden state h is a running summary with a <b>fixed size</b>. Each step folds one more word vector x into it. Step t can't start until step t−1 is done.</span></p>
 <p>Keep two facts from that line: the summary never grows, and the computation is a chain.<span class="sidenote">LSTMs and GRUs are gated versions of <var>f</var> that hold on to information longer. They don't change either fact. See <a href="https://web.stanford.edu/~jurafsky/slp3/14.pdf">SLP3 §14.5</a>.</span></p>
 
@@ -185,8 +185,14 @@
 </div>
 
 <div class="ask-box">
-  <span class="label">Ask your teacher</span>
-  <p>Try asking me: <em>"Why can't we just make c bigger?"</em>, <em>"What does an LSTM gate actually do?"</em> or <em>"How does the decoder know when to stop?"</em></p>
+  <span class="label">Questions to take further</span>
+  <p>Try answering these before moving on:</p>
+  <ul>
+    <li>Why not just make c bigger?</li>
+    <li>What does an LSTM gate actually do?</li>
+    <li>How does the decoder know when to stop?</li>
+  </ul>
+  <p>Stuck? Talk it through with a study partner, ask an AI assistant, or post on <a href="https://www.reddit.com/r/LanguageTechnology/">r/LanguageTechnology</a>.</p>
 </div>
 
 <nav class="pager">

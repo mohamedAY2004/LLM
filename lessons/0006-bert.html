@@ -35,7 +35,7 @@
 </div>
 
 <h2>1 · The recipe: pre-train, then fine-tune</h2>
-<p>Labelled data is scarce and raw text is plentiful. So first <strong>pre-train</strong> on raw text with a task where every word is its own label, which needs no annotators (deck 03, slide 21). Then <strong>fine-tune</strong> the same network on your small labelled task. BERT was pre-trained on BooksCorpus (800M words) plus English Wikipedia (2,500M words).<span class="sidenote"><a href="https://aclanthology.org/N19-1423/">Devlin et al. 2019</a>, §3.1. The paper notes it is "critical to use a document-level corpus rather than a shuffled sentence-level corpus."</span></p>
+<p>Labelled data is scarce and raw text is plentiful. So first <strong>pre-train</strong> on raw text with a task where every word is its own label, which needs no annotators. Then <strong>fine-tune</strong> the same network on your small labelled task. BERT was pre-trained on BooksCorpus (800M words) plus English Wikipedia (2,500M words).<span class="sidenote"><a href="https://aclanthology.org/N19-1423/">Devlin et al. 2019</a>, §3.1. The paper notes it is "critical to use a document-level corpus rather than a shuffled sentence-level corpus."</span></p>
 <p>What makes BERT <em>BERT</em> is the choice of pre-training task.</p>
 
 <h2>2 · Why not just predict the next word?</h2>
@@ -104,7 +104,7 @@
 <h2>4 · The input format</h2>
 <p class="eq"><code>[CLS]</code> the man went to the store <code>[SEP]</code> he bought a gallon of milk <code>[SEP]</code></p>
 <ul>
-  <li><strong>WordPiece tokens</strong> with a 30,000-token vocabulary (deck 01, slide 15: the <code>##</code> pieces).</li>
+  <li><strong>WordPiece tokens</strong> with a 30,000-token vocabulary. Rare words are split into pieces, and <code>##</code> marks a piece that continues a word, as in "flight ##less."</li>
   <li><strong><code>[CLS]</code></strong> always comes first. Its final vector is "used as the aggregate sequence representation for classification tasks."</li>
   <li><strong><code>[SEP]</code></strong> separates sentence A from sentence B and ends the input.</li>
   <li>Each token's input vector = <strong>token embedding + segment embedding</strong> (A or B) <strong>+ position embedding</strong>. The position embedding is lesson 5's "add order back."</li>
@@ -125,11 +125,11 @@
 <h2>6 · Fine-tuning: one small layer on top</h2>
 <p>To use BERT for a task, add one output layer and train <em>all</em> the weights a little on your labelled data:</p>
 <ul>
-  <li><strong>Sentence classification</strong> (deck 02's sentiment task): <code>[CLS]</code> review <code>[SEP]</code> → final <code>[CLS]</code> vector → linear layer + softmax → positive/negative.</li>
+  <li><strong>Sentence classification</strong> (for example, sentiment): <code>[CLS]</code> review <code>[SEP]</code> → final <code>[CLS]</code> vector → linear layer + softmax → positive/negative.</li>
   <li><strong>Token tagging</strong> (named entities): a classifier on <em>every</em> token's final vector.</li>
   <li><strong>Question answering</strong> (SQuAD): <code>[CLS]</code> question <code>[SEP]</code> passage <code>[SEP]</code> → score each passage token as the answer's start or end.</li>
 </ul>
-<p>Compare this with deck 02's TF-IDF + logistic regression. In both cases a linear classifier sits on top. The difference is that the features under it are now contextual vectors from 12 layers of self-attention, instead of word counts.</p>
+<p>Compare this with a classic TF-IDF + logistic regression classifier. In both cases a linear classifier sits on top. The difference is that the features under it are now contextual vectors from 12 layers of self-attention, instead of word counts.</p>
 
 <h2>7 · Closing the loop: contextual embeddings</h2>
 <div class="callout key">
@@ -139,7 +139,7 @@
 <p><strong>Evidence that both directions matter.</strong> The paper's ablation compares a left-to-right model with the masked model, both without NSP. Going left-to-right drops SQuAD F1 from 87.9 to 77.8 and MRPC from 86.5 to 77.5, while SST-2 sentiment barely moves (92.6 → 92.1). The paper explains the SQuAD result: "the token-level hidden states have no right-side context."<span class="sidenote">Devlin et al., Table 5 and §5.1.</span> The tasks that depend on each <em>token</em> understanding what follows it lose the most.</p>
 
 <h3>Where BERT sits today</h3>
-<p>Deck 03, slide 17's taxonomy now reads naturally. <b>Encoder-only</b> (BERT) is bidirectional, built for classification, tagging and embeddings. <b>Decoder-only</b> (GPT) is left-to-right, built for generation. <b>Encoder–decoder</b> (T5) is lesson 5's original shape. Slide 18 explains why decoder-only models took over generative AI. BERT-style encoders are still widely used for search embeddings and classification, including AraBERT for Arabic (deck 02, slide 24).</p>
+<p>The usual three-way taxonomy of Transformers now reads naturally. <b>Encoder-only</b> (BERT) is bidirectional, built for classification, tagging and embeddings. <b>Decoder-only</b> (GPT) is left-to-right, built for generation. <b>Encoder–decoder</b> (T5) is lesson 5's original shape. Decoder-only models went on to dominate generative AI, but BERT-style encoders are still widely used for search embeddings and classification, including language-specific versions such as AraBERT for Arabic.</p>
 
 <div class="quiz-set" data-title="Check yourself">
 <script type="application/json">
@@ -188,8 +188,14 @@
 </div>
 
 <div class="ask-box">
-  <span class="label">Ask your teacher</span>
-  <p>Try asking me: <em>"Why can't BERT generate text the way GPT does?"</em>, <em>"How would I fine-tune AraBERT on deck 02's Arabic reviews?"</em> or <em>"Quiz me on the whole chain, mixed up."</em></p>
+  <span class="label">Questions to take further</span>
+  <p>Try answering these before moving on:</p>
+  <ul>
+    <li>Why can't BERT generate text the way GPT does?</li>
+    <li>How would you fine-tune AraBERT on a set of Arabic product reviews?</li>
+    <li>A week from now, can you retake all six quizzes, mixed up?</li>
+  </ul>
+  <p>Stuck? Talk it through with a study partner, ask an AI assistant, or post on <a href="https://www.reddit.com/r/LanguageTechnology/">r/LanguageTechnology</a>.</p>
 </div>
 
 <nav class="pager">

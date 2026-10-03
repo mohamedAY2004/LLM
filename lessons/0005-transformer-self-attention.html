@@ -21,7 +21,7 @@
 
 <p class="kicker">Lesson 5 of 6 · The Transformer (2017) · about 20 minutes</p>
 <h1>Attention, minus the RNN</h1>
-<p class="lede">In lesson 4, the attention part worked well and the RNN underneath held everything back. Vaswani et al. (2017) removed the RNN and used attention for everything. Three changes make that possible, and they are what deck 03 compresses into slides 8–14.</p>
+<p class="lede">In lesson 4, the attention part worked well and the RNN underneath held everything back. Vaswani et al. (2017) removed the RNN and used attention for everything. Three changes make that possible, and this lesson unpacks each one.</p>
 
 <div class="quiz-set" data-title="Warm-up from lesson 4">
 <script type="application/json">
@@ -78,12 +78,12 @@
   <text x="830" y="195" font-size="12" text-anchor="middle">tired</text>
   <text x="680" y="222" font-size="11" class="soft" text-anchor="middle">all 4 outputs computed together, and every pair is 1 hop</text>
 </svg>
-<figcaption>Left: the recurrence that lesson 4 left in place. Right: self-attention. Each output (′) is a weighted blend of <em>all</em> inputs, and none of them waits for another. Deck 03, slide 8 calls this a "constant O(1) path length."</figcaption>
+<figcaption>Left: the recurrence that lesson 4 left in place. Right: self-attention. Each output (′) is a weighted blend of <em>all</em> inputs, and none of them waits for another. This is often summarised as a "constant O(1) path length" between words.</figcaption>
 </figure>
 
 <h2>Change 1 · Self-attention: the query comes from the same sentence</h2>
 <p>In lesson 4, the decoder (one sequence) queried the encoder (another sequence). In <strong>self-attention</strong>, every word in a sentence queries <em>every word in the same sentence</em>, itself included. Each word asks: <em>which of my neighbours should I blend into my new vector?</em> The output for each word is a context-aware version of that word.</p>
-<p>This is how deck 03, slide 11 turns "it" into "it, meaning the animal." Try it:</p>
+<p>This is how self-attention handles the classic example "The animal didn't cross the street because it was too tired." The word "it" becomes "it, meaning the animal." Try it:</p>
 
 <div class="attn-lab" data-title="Self-attention lab · the query for &quot;it&quot;">
 <script type="application/json">
@@ -121,26 +121,26 @@
 <p class="eq"><var>q</var> = <var>x</var>W<sup>Q</sup> &nbsp;&nbsp; <var>k</var> = <var>x</var>W<sup>K</sup> &nbsp;&nbsp; <var>v</var> = <var>x</var>W<sup>V</sup><span class="note">The same three matrices are applied to every position. They are the parameters. q, k and v are recomputed for every sentence.</span></p>
 <p><strong>Why three separate projections?</strong> A word does three different jobs. As a <em>query</em>, it describes what it is looking for ("it" looks for an antecedent). As a <em>key</em>, it describes how it should be found ("animal" advertises "animate noun, can be referred to"). As a <em>value</em>, it carries what to hand over once found (the full meaning of "animal"). In Bahdanau attention one vector did both the key and value jobs. Separating them lets each be tuned for its own job.</p>
 
-<p>Stack all positions into matrices and the whole layer becomes one formula, the one on deck 03, slide 12:</p>
+<p>Stack all positions into matrices and the whole layer becomes one formula, the one at the heart of every Transformer:</p>
 <p class="eq">Attention(Q, K, V) = softmax( QK<sup>⊤</sup> / √<var>d</var><sub>k</sub> ) V<span class="note">QK<sup>⊤</sup> = every query·key score at once (an n × n grid) → row-wise softmax = the weights → × V = the blends. These are lesson 4's three steps, done for every word in parallel.</span></p>
 
 <p><strong>Why divide by √d<sub>k</sub>?</strong> The paper: "for large values of d<sub>k</sub>, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients." If the components of q and k are random with variance 1, then q·k has variance d<sub>k</sub>, so its typical size grows like √d<sub>k</sub>. Dividing by √d<sub>k</sub> brings the scores back to a range where softmax still gives a useful gradient and doesn't collapse into a hard one-hot.<span class="sidenote"><a href="https://arxiv.org/abs/1706.03762">Vaswani et al. 2017</a>, §3.2.1 and footnote 4.</span></p>
 
 <h3>Multi-head attention</h3>
-<p>Run several attentions side by side, each with its own W<sup>Q</sup>, W<sup>K</sup>, W<sup>V</sup>, so each head can weight words by a different criterion (deck 03, slide 13: syntax heads, coreference heads). The original model used <b>h = 8</b> heads of size <b>d<sub>k</sub> = 64</b> each, for d<sub>model</sub> = 512. The heads' outputs are concatenated and projected back. Because each head is smaller, the total cost is "similar to that of single-head attention with full dimensionality."<span class="sidenote">Vaswani et al., §3.2.2.</span></p>
+<p>Run several attentions side by side, each with its own W<sup>Q</sup>, W<sup>K</sup>, W<sup>V</sup>, so each head can weight words by a different criterion (for example, one head might follow grammatical links while another links pronouns to their nouns). The original model used <b>h = 8</b> heads of size <b>d<sub>k</sub> = 64</b> each, for d<sub>model</sub> = 512. The heads' outputs are concatenated and projected back. Because each head is smaller, the total cost is "similar to that of single-head attention with full dimensionality."<span class="sidenote">Vaswani et al., §3.2.2.</span></p>
 
 <h2>Change 3 · Word order has to be added back</h2>
-<p>Look at the formula again: nothing in it knows which word came first. Shuffle the input and every word gets exactly the same output, just in a different slot. Deck 03, slide 14 calls this the "permutation invariance flaw": to plain self-attention, a sentence is a bag of words again, just like TF-IDF.</p>
-<p>The fix is to add a <strong>position signal</strong> to each word's vector before the first layer. The original paper used fixed sine and cosine patterns. Modern LLMs use RoPE, which rotates q and k according to position (deck 03, slide 14). BERT (lesson 6) adds a position embedding for each slot.</p>
+<p>Look at the formula again: nothing in it knows which word came first. Shuffle the input and every word gets exactly the same output, just in a different slot. To plain self-attention, a sentence is a bag of words again, just like TF-IDF.</p>
+<p>The fix is to add a <strong>position signal</strong> to each word's vector before the first layer. The original paper used fixed sine and cosine patterns. Modern LLMs use RoPE, which rotates q and k according to position. BERT (lesson 6) adds a position embedding for each slot.</p>
 
 <div class="callout key">
   <span class="label">The trade you just made</span>
-  <p><strong>Gained:</strong> all positions computed in parallel, and a 1-hop path between any two words. <strong>Paid:</strong> order has to be injected explicitly, and the score grid is n × n, so cost grows with the <em>square</em> of the length (deck 01, slide 14; FlashAttention on deck 03, slide 49 exists because of this).</p>
+  <p><strong>Gained:</strong> all positions computed in parallel, and a 1-hop path between any two words. <strong>Paid:</strong> order has to be injected explicitly, and the score grid is n × n, so cost grows with the <em>square</em> of the length (this is why techniques such as FlashAttention exist).</p>
 </div>
 
 <h2>Bahdanau is still inside</h2>
 <p>The original Transformer is still an encoder–decoder translator, like lesson 3's, and it uses attention in three places. The encoder has <em>self-attention</em>. The decoder has <em>masked</em> self-attention, where a word may not look at words that come after it. The third is the connection between them: "the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder … This mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models." That third one is lesson 4 exactly, with the RNNs removed around it.</p>
-<p>Each encoder layer is: multi-head self-attention → a feed-forward network applied to each position, with a residual connection and normalisation around each (deck 03, slides 15–16). The original stacks <b>N = 6</b> of these layers.</p>
+<p>Each encoder layer is: multi-head self-attention → a feed-forward network applied to each position, with a residual connection and normalisation around each. The original stacks <b>N = 6</b> of these layers.</p>
 
 <h2>What still breaks</h2>
 <div class="callout fail">
@@ -171,7 +171,7 @@
 </script>
 </div>
 
-<div class="recall" data-title="Recall: explain it to a classmate">
+<div class="recall" data-title="Recall: explain it to a friend">
   <p class="prompt">Explain why a Transformer trains much faster than Seq2Seq-with-attention on the same GPU, and name the one thing it had to add back because it dropped the RNN, with the reason.</p>
   <template class="answer">
     <p>In an RNN, step t can't start until step t−1 finishes, so the positions of a sentence are processed one after another. Self-attention computes every position's query, key and value, and every query·key score, as a few big matrix multiplications with no dependency between positions. GPUs are built for exactly that kind of work, so all positions are processed at once. Any two words are also one hop apart instead of n.</p>
@@ -185,8 +185,14 @@
 </div>
 
 <div class="ask-box">
-  <span class="label">Ask your teacher</span>
-  <p>Try asking me: <em>"Why does the decoder need masking but the encoder doesn't?"</em>, <em>"What do the feed-forward layers add if attention already mixes words?"</em> or <em>"Show me the matrix shapes for a 5-word sentence."</em></p>
+  <span class="label">Questions to take further</span>
+  <p>Try answering these before moving on:</p>
+  <ul>
+    <li>Why does the decoder need masking when the encoder doesn't?</li>
+    <li>What do the feed-forward layers add if attention already mixes words?</li>
+    <li>What are the matrix shapes for a 5-word sentence?</li>
+  </ul>
+  <p>Stuck? Talk it through with a study partner, ask an AI assistant, or post on <a href="https://www.reddit.com/r/LanguageTechnology/">r/LanguageTechnology</a>.</p>
 </div>
 
 <nav class="pager">

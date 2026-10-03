@@ -21,7 +21,7 @@
 
 <p class="kicker">Lesson 4 of 6 · Attention (2014–15) · about 20 minutes · the most important lesson</p>
 <h1>A new context vector for every word you write</h1>
-<p class="lede">Bahdanau, Cho and Bengio named the problem outright: "the use of a fixed-length vector is a bottleneck." Their fix underlies everything after it: Transformers, BERT and GPT. Once you can run it by hand, deck 03's Q/K/V slide is only new names for the same thing.</p>
+<p class="lede">Bahdanau, Cho and Bengio named the problem outright: "the use of a fixed-length vector is a bottleneck." Their fix underlies everything after it: Transformers, BERT and GPT. Once you can run it by hand, the query/key/value formula in every Transformer explainer is only new names for the same thing.</p>
 
 <div class="quiz-set" data-title="Warm-up from lesson 3">
 <script type="application/json">
@@ -121,7 +121,7 @@
 
 <p>The heatmap at the bottom is the kind of figure in Bahdanau et al.'s paper (their Figure 3). Rows are output words and columns are source words. Notice that it is <em>not</em> a diagonal. The model is free to read the source in any order the target language needs.</p>
 
-<h2>4 · Four things the slides don't say</h2>
+<h2>4 · Four things summaries leave out</h2>
 <h3>a. Nobody labels the alignments</h3>
 <p>The model is trained <em>only</em> to translate. The weights α are whatever makes translation work. Yet in the paper's analysis, "the (soft-)alignments found by the model agree well with our intuition." The alignment emerges on its own. It is not supervised.<span class="sidenote"><a href="https://arxiv.org/abs/1409.0473">Bahdanau et al.</a>, abstract.</span></p>
 <h3>b. "Soft" is what makes it trainable</h3>
@@ -132,10 +132,10 @@
 <p>The <em>scoring function</em> (W<sub>a</sub>, U<sub>a</sub>, v<sub>a</sub>) is learned and fixed after training. The weights α are <em>recomputed</em> for every sentence and every output step. Mixing these two up is the most common misconception about attention.</p>
 
 <h2>5 · Rename it: query, key, value</h2>
-<p>Deck 03, slide 12 gives Q, K, V without saying where they come from. They come from here:</p>
+<p>Transformer explainers usually introduce Q, K and V without saying where they come from. They come from here:</p>
 <div class="table-scroll">
 <table>
-  <tr><th>Role</th><th>Deck 03's description</th><th>In Bahdanau attention</th></tr>
+  <tr><th>Role</th><th>Usual description</th><th>In Bahdanau attention</th></tr>
   <tr><td><strong>Query</strong></td><td>what this token is searching for</td><td>decoder state <var>s</var><sub>i−1</sub></td></tr>
   <tr><td><strong>Key</strong></td><td>the label describing what it offers (used to <em>score</em>)</td><td>encoder state <var>h</var><sub>j</sub></td></tr>
   <tr><td><strong>Value</strong></td><td>the content actually passed on (what gets <em>blended</em>)</td><td>encoder state <var>h</var><sub>j</sub>, the <em>same</em> vector as the key</td></tr>
@@ -149,7 +149,7 @@
 <h2>6 · What still breaks</h2>
 <div class="callout fail">
   <span class="label">The RNN underneath</span>
-  <p>Attention sits <em>on top of</em> RNNs. Each h<sub>j</sub> still waits for h<sub>j−1</sub>, and each s<sub>i</sub> still waits for s<sub>i−1</sub>. Training can't parallelise across positions: "thousands of GPU cores sit completely idle" (deck 03, slide 6). Inside the encoder, word 1 and word 30 still interact only through about 30 recurrent steps. The attention part works well. The recurrent part is what holds things back.</p>
+  <p>Attention sits <em>on top of</em> RNNs. Each h<sub>j</sub> still waits for h<sub>j−1</sub>, and each s<sub>i</sub> still waits for s<sub>i−1</sub>. Training can't parallelise across positions, so most of a GPU's thousands of cores sit idle while each step waits for the last. Inside the encoder, word 1 and word 30 still interact only through about 30 recurrent steps. The attention part works well. The recurrent part is what holds things back.</p>
 </div>
 
 <div class="quiz-set" data-title="Check yourself">
@@ -193,8 +193,14 @@
 </div>
 
 <div class="ask-box">
-  <span class="label">Ask your teacher</span>
-  <p>This is the lesson to question hardest. Try asking me: <em>"Why use the previous decoder state and not the current one?"</em>, <em>"What does additive attention compute that a dot product doesn't?"</em> or <em>"Give me a new sentence and I'll predict the heatmap."</em></p>
+  <span class="label">Questions to take further</span>
+  <p>This is the lesson to question hardest. Try answering these before moving on:</p>
+  <ul>
+    <li>Why does the score use the previous decoder state and not the current one?</li>
+    <li>What can additive attention compute that a plain dot product can't?</li>
+    <li>Pick a new sentence pair and sketch the heatmap you would expect.</li>
+  </ul>
+  <p>Stuck? Talk it through with a study partner, ask an AI assistant, or post on <a href="https://www.reddit.com/r/LanguageTechnology/">r/LanguageTechnology</a>.</p>
 </div>
 
 <nav class="pager">
