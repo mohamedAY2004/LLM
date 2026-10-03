@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TF-IDF to BERT</title>
+<link rel="stylesheet" href="../assets/course.css">
+<style>
+  main > * { max-width: 1000px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2rem; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  .eq { font-size: 0.98rem; text-align: left; white-space: normal; }
+  table { font-size: 0.8rem; }
+  h2 { font-size: 1.25rem; margin-top: 1.8rem; }
+  @media print { .eq { font-size: 9.5pt; } table { font-size: 8.5pt; } h2 { margin-top: 1rem; padding-top: 0.6rem; } }
+</style>
+</head>
+<body>
+<main>
+
+<nav class="course">
+  <a href="../lessons/0001-the-evolution-map.html">1 · The map</a>
+  <a href="../lessons/0002-word2vec.html">2 · Word2Vec</a>
+  <a href="../lessons/0003-seq2seq-bottleneck.html">3 · Seq2Seq</a>
+  <a href="../lessons/0004-attention.html">4 · Attention</a>
+  <a href="../lessons/0005-transformer-self-attention.html">5 · Transformer</a>
+  <a href="../lessons/0006-bert.html">6 · BERT</a>
+  <a class="here" href="evolution-cheatsheet.html">Cheat sheet</a>
+</nav>
+
+<p class="kicker">Reference · prints on one to two pages</p>
+<h1>TF-IDF → BERT, compressed</h1>
+<p class="lede">Each step exists because the one before it broke. Read each row left to right, and read the "breaks" column as the reason the next row exists.</p>
+
+<div class="table-scroll">
+<table>
+  <tr><th>Step</th><th>Year · source</th><th>Represents</th><th>Trained by</th><th>Fixed</th><th>Breaks on</th></tr>
+  <tr><td><b>TF-IDF / BoW</b></td><td>classical</td><td>doc = weighted word counts, one axis per word</td><td>no training (counting)</td><td>n/a</td><td>no similarity between different words; order lost</td></tr>
+  <tr><td><b>Word2Vec</b><br><a href="../lessons/0002-word2vec.html" class="small">lesson 2</a></td><td>2013 · <a href="https://arxiv.org/abs/1301.3781">Mikolov a</a>, <a href="https://arxiv.org/abs/1310.4546">b</a></td><td>one dense vector per word <b>type</b> (static)</td><td>skip-gram + negative sampling: real neighbour vs noise</td><td>similar words → nearby vectors (shared neighbours → shared pull)</td><td>the bank problem (one vector per word); no sentence machinery</td></tr>
+  <tr><td><b>Seq2Seq</b><br><a href="../lessons/0003-seq2seq-bottleneck.html" class="small">lesson 3</a></td><td>2014 · <a href="https://arxiv.org/abs/1409.3215">Sutskever</a>; <a href="https://arxiv.org/abs/1409.1259">Cho</a></td><td>sentence → one fixed-size context vector c</td><td>RNN encoder + RNN decoder on sentence pairs</td><td>order; variable-length input → output</td><td><b>the bottleneck</b>: quality "degrades rapidly" with length</td></tr>
+  <tr><td><b>+ Attention</b><br><a href="../lessons/0004-attention.html" class="small">lesson 4</a></td><td>2014/15 · <a href="https://arxiv.org/abs/1409.0473">Bahdanau</a></td><td>fresh context c<sub>i</sub> per output word</td><td>same, with a learned scoring function</td><td>bottleneck gone; emergent alignment</td><td>RNNs still sequential → no parallel training</td></tr>
+  <tr><td><b>Transformer</b><br><a href="../lessons/0005-transformer-self-attention.html" class="small">lesson 5</a></td><td>2017 · <a href="https://arxiv.org/abs/1706.03762">Vaswani</a></td><td>every token re-represented by self-attention</td><td>translation pairs (enc–dec)</td><td>parallel; 1-hop path between any two words</td><td>per-task labelled data; next-word pre-training sees only the left side</td></tr>
+  <tr><td><b>BERT</b><br><a href="../lessons/0006-bert.html" class="small">lesson 6</a></td><td>2018 · <a href="https://aclanthology.org/N19-1423/">Devlin</a></td><td><b>contextual</b> vector per token</td><td>masked LM (+ NSP) on 3.3B words, then fine-tune</td><td>bidirectional pre-training; fixes the bank problem</td><td>(not a generator: GPT-style decoders took over generation)</td></tr>
+</table>
+</div>
+
+<div class="grid2">
+<div>
+<h2>Key equations</h2>
+<p class="eq"><b>SGNS</b> &nbsp; P(real) = σ(e<sub>center</sub> · c<sub>word</sub>) → 1 for real pairs, 0 for k random negatives</p>
+<p class="eq"><b>RNN</b> &nbsp; h<sub>t</sub> = f(h<sub>t−1</sub>, x<sub>t</sub>) &nbsp;·&nbsp; <b>Seq2Seq</b> &nbsp; c = h<sub>n</sub>, and the decoder starts from c</p>
+<p class="eq"><b>Bahdanau</b> &nbsp; e<sub>ij</sub> = v<sub>a</sub><sup>⊤</sup>tanh(W<sub>a</sub>s<sub>i−1</sub> + U<sub>a</sub>h<sub>j</sub>) &nbsp;→&nbsp; α<sub>ij</sub> = softmax<sub>j</sub>(e<sub>ij</sub>) &nbsp;→&nbsp; c<sub>i</sub> = Σ<sub>j</sub> α<sub>ij</sub>h<sub>j</sub></p>
+<p class="eq"><b>Transformer</b> &nbsp; Q = XW<sup>Q</sup>, K = XW<sup>K</sup>, V = XW<sup>V</sup> &nbsp;·&nbsp; Attention = softmax(QK<sup>⊤</sup>/√d<sub>k</sub>) V</p>
+<p class="eq"><b>BERT input</b> &nbsp; token + segment + position embedding &nbsp;·&nbsp; <b>MLM</b>: choose 15% → 80% [MASK], 10% random, 10% unchanged</p>
+</div>
+<div>
+<h2>Who plays Q, K, V</h2>
+<table>
+  <tr><th>Attention type</th><th>Query from</th><th>Keys / values from</th></tr>
+  <tr><td>Bahdanau (2014)</td><td>decoder state s<sub>i−1</sub></td><td>encoder states h<sub>j</sub> (K = V)</td></tr>
+  <tr><td>Self-attention</td><td>same sequence</td><td>same sequence (separate W<sup>K</sup>, W<sup>V</sup>)</td></tr>
+  <tr><td>Masked self-attn (decoder, GPT)</td><td>same sequence</td><td>same sequence, <em>earlier positions only</em></td></tr>
+  <tr><td>Cross-attn (Transformer enc–dec)</td><td>decoder</td><td>encoder output (Bahdanau, reborn)</td></tr>
+  <tr><td>BERT</td><td colspan="2">self-attention, both directions, no masking of positions</td></tr>
+</table>
+
+<h2>Numbers worth knowing</h2>
+<table>
+  <tr><td>Transformer base</td><td>d<sub>model</sub> 512 · h 8 · d<sub>k</sub> 64 · N 6</td></tr>
+  <tr><td>BERT-base</td><td>L 12 · H 768 · A 12 · 110M params</td></tr>
+  <tr><td>BERT-large</td><td>L 24 · H 1024 · A 16 · 340M params</td></tr>
+  <tr><td>BERT data</td><td>BooksCorpus 800M + Wikipedia 2,500M words</td></tr>
+  <tr><td>BERT vocab</td><td>WordPiece, 30,000 tokens</td></tr>
+</table>
+</div>
+</div>
+
+<h2>Distinctions people get wrong</h2>
+<div class="grid2">
+<ul>
+  <li><b>Attention weights ≠ parameters.</b> The scoring function is learned. The weights α are recomputed for every sentence and step.</li>
+  <li><b>Score vs weight.</b> Score = before softmax (any real number). Weight = after softmax (≥ 0, sums to 1).</li>
+  <li><b>√d<sub>k</sub></b> keeps softmax out of saturation. Making the weights sum to 1 is softmax's job.</li>
+</ul>
+<ul>
+  <li><b>BERT's input embeddings are static.</b> The context comes from the layers.</li>
+  <li><b>Self-attention is order-blind.</b> Position must be added (sinusoids, learned embeddings, RoPE).</li>
+  <li><b>Masking means two different things:</b> MLM <code>[MASK]</code> tokens (BERT's input) vs the causal attention mask (GPT's decoder).</li>
+</ul>
+</div>
+
+<p class="small muted">Sources: the linked papers; <a href="https://web.stanford.edu/~jurafsky/slp3/">Jurafsky &amp; Martin, SLP3</a> (Ch 5, 7, 9, 14); <a href="https://jalammar.github.io/">Jay Alammar's illustrated guides</a>.</p>
+
+</main>
+</body>
+</html>

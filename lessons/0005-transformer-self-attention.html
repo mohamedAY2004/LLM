@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5 · Self-Attention Transformer</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+
+<nav class="course">
+  <a href="0001-the-evolution-map.html">1 · The map</a>
+  <a href="0002-word2vec.html">2 · Word2Vec</a>
+  <a href="0003-seq2seq-bottleneck.html">3 · Seq2Seq</a>
+  <a href="0004-attention.html">4 · Attention</a>
+  <a class="here" href="0005-transformer-self-attention.html">5 · Transformer</a>
+  <a href="0006-bert.html">6 · BERT</a>
+  <a href="../reference/evolution-cheatsheet.html">Cheat sheet</a>
+</nav>
+
+<p class="kicker">Lesson 5 of 6 · The Transformer (2017) · about 20 minutes</p>
+<h1>Attention, minus the RNN</h1>
+<p class="lede">In lesson 4, the attention part worked well and the RNN underneath held everything back. Vaswani et al. (2017) removed the RNN and used attention for everything. Three changes make that possible, and they are what deck 03 compresses into slides 8–14.</p>
+
+<div class="quiz-set" data-title="Warm-up from lesson 4">
+<script type="application/json">
+[
+  {"q": "In Bahdanau attention, what are the <em>keys</em>?",
+   "options": ["the encoder hidden states", "the decoder hidden states", "the attention weight values", "the target word embeddings"],
+   "answer": 0,
+   "why": "The keys are the encoder states h<sub>j</sub>, and so are the values (the same vectors). The query is the decoder state s<sub>i−1</sub>. Keep this mapping in mind, because the Transformer changes it."}
+]
+</script>
+</div>
+
+<figure class="wide">
+<svg viewBox="0 0 900 230" role="img" aria-label="RNN processes words in a chain; self-attention connects every word to every word in one step">
+  <defs>
+    <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" style="fill: var(--ink-soft)"/>
+    </marker>
+  </defs>
+  <!-- left: RNN -->
+  <text x="30" y="24" font-size="12" font-weight="700" class="t-fail">RNN: 4 steps, one after another</text>
+  <rect x="30"  y="95" width="64" height="38" rx="5" class="box"/><text x="62"  y="119" font-size="12" text-anchor="middle">h₁</text>
+  <rect x="124" y="95" width="64" height="38" rx="5" class="box"/><text x="156" y="119" font-size="12" text-anchor="middle">h₂</text>
+  <rect x="218" y="95" width="64" height="38" rx="5" class="box"/><text x="250" y="119" font-size="12" text-anchor="middle">h₃</text>
+  <rect x="312" y="95" width="64" height="38" rx="5" class="box"/><text x="344" y="119" font-size="12" text-anchor="middle">h₄</text>
+  <line x1="94"  y1="114" x2="122" y2="114" style="stroke: var(--fail)" stroke-width="2" marker-end="url(#a5)"/>
+  <line x1="188" y1="114" x2="216" y2="114" style="stroke: var(--fail)" stroke-width="2" marker-end="url(#a5)"/>
+  <line x1="282" y1="114" x2="310" y2="114" style="stroke: var(--fail)" stroke-width="2" marker-end="url(#a5)"/>
+  <text x="62"  y="195" font-size="12" text-anchor="middle">the</text>
+  <text x="156" y="195" font-size="12" text-anchor="middle">animal</text>
+  <text x="250" y="195" font-size="12" text-anchor="middle">was</text>
+  <text x="344" y="195" font-size="12" text-anchor="middle">tired</text>
+  <line x1="62"  y1="180" x2="62"  y2="135" class="stroke-soft" marker-end="url(#a5)"/>
+  <line x1="156" y1="180" x2="156" y2="135" class="stroke-soft" marker-end="url(#a5)"/>
+  <line x1="250" y1="180" x2="250" y2="135" class="stroke-soft" marker-end="url(#a5)"/>
+  <line x1="344" y1="180" x2="344" y2="135" class="stroke-soft" marker-end="url(#a5)"/>
+  <text x="200" y="222" font-size="11" class="soft" text-anchor="middle">word 1 reaches word 4 via 3 hops, and h₄ waits for h₃</text>
+
+  <!-- right: self-attention -->
+  <text x="490" y="24" font-size="12" font-weight="700" class="t-fix">Self-attention: 1 step, every pair connected</text>
+  <g style="stroke: var(--fix)" stroke-width="1" opacity="0.55">
+    <line x1="530" y1="178" x2="530" y2="78"/><line x1="530" y1="178" x2="630" y2="78"/><line x1="530" y1="178" x2="730" y2="78"/><line x1="530" y1="178" x2="830" y2="78"/>
+    <line x1="630" y1="178" x2="530" y2="78"/><line x1="630" y1="178" x2="630" y2="78"/><line x1="630" y1="178" x2="730" y2="78"/><line x1="630" y1="178" x2="830" y2="78"/>
+    <line x1="730" y1="178" x2="530" y2="78"/><line x1="730" y1="178" x2="630" y2="78"/><line x1="730" y1="178" x2="730" y2="78"/><line x1="730" y1="178" x2="830" y2="78"/>
+    <line x1="830" y1="178" x2="530" y2="78"/><line x1="830" y1="178" x2="630" y2="78"/><line x1="830" y1="178" x2="730" y2="78"/><line x1="830" y1="178" x2="830" y2="78"/>
+  </g>
+  <rect x="498" y="44" width="64" height="34" rx="5" class="box-fix"/><text x="530" y="66" font-size="11" text-anchor="middle">the′</text>
+  <rect x="598" y="44" width="64" height="34" rx="5" class="box-fix"/><text x="630" y="66" font-size="11" text-anchor="middle">animal′</text>
+  <rect x="698" y="44" width="64" height="34" rx="5" class="box-fix"/><text x="730" y="66" font-size="11" text-anchor="middle">was′</text>
+  <rect x="798" y="44" width="64" height="34" rx="5" class="box-fix"/><text x="830" y="66" font-size="11" text-anchor="middle">tired′</text>
+  <text x="530" y="195" font-size="12" text-anchor="middle">the</text>
+  <text x="630" y="195" font-size="12" text-anchor="middle">animal</text>
+  <text x="730" y="195" font-size="12" text-anchor="middle">was</text>
+  <text x="830" y="195" font-size="12" text-anchor="middle">tired</text>
+  <text x="680" y="222" font-size="11" class="soft" text-anchor="middle">all 4 outputs computed together, and every pair is 1 hop</text>
+</svg>
+<figcaption>Left: the recurrence that lesson 4 left in place. Right: self-attention. Each output (′) is a weighted blend of <em>all</em> inputs, and none of them waits for another. Deck 03, slide 8 calls this a "constant O(1) path length."</figcaption>
+</figure>
+
+<h2>Change 1 · Self-attention: the query comes from the same sentence</h2>
+<p>In lesson 4, the decoder (one sequence) queried the encoder (another sequence). In <strong>self-attention</strong>, every word in a sentence queries <em>every word in the same sentence</em>, itself included. Each word asks: <em>which of my neighbours should I blend into my new vector?</em> The output for each word is a context-aware version of that word.</p>
+<p>This is how deck 03, slide 11 turns "it" into "it, meaning the animal." Try it:</p>
+
+<div class="attn-lab" data-title="Self-attention lab · the query for &quot;it&quot;">
+<script type="application/json">
+{
+  "dims": ["animate", "place"],
+  "scale": true,
+  "showValues": true,
+  "queryName": "q for “it”",
+  "outName": "new vector for “it”",
+  "keys": [
+    {"label": "The",     "k": [0.1, 0.1], "v": [0, 0]},
+    {"label": "animal",  "k": [3.5, 0.0], "v": [1, 0]},
+    {"label": "didn't",  "k": [0.1, 0.1], "v": [0, 0]},
+    {"label": "cross",   "k": [0.5, 0.5], "v": [0.3, 0.3]},
+    {"label": "the",     "k": [0.1, 0.1], "v": [0, 0]},
+    {"label": "street",  "k": [0.0, 3.5], "v": [0, 1]},
+    {"label": "because", "k": [0.1, 0.1], "v": [0, 0]},
+    {"label": "it",      "k": [0.5, 0.5], "v": [0.2, 0.2]},
+    {"label": "was",     "k": [0.1, 0.1], "v": [0, 0]},
+    {"label": "too",     "k": [0.1, 0.1], "v": [0, 0]},
+    {"label": "tired / wide", "k": [0.3, 0.3], "v": [0.2, 0.2]}
+  ],
+  "queries": [
+    {"label": "“it” in “…because it was too tired”", "q": [2.0, 0.2]},
+    {"label": "“it” in “…because it was too wide”",  "q": [0.2, 2.0]}
+  ],
+  "heatmap": true
+}
+</script>
+</div>
+<p class="small muted">Toy numbers chosen by hand. In a real model, the query for "it" has already been shaped by earlier layers that mixed in "tired" or "wide." Here we set it directly. The score column is divided by √2 because d = 2 (see Change 2).</p>
+
+<h2>Change 2 · Separate Q, K and V, all learned</h2>
+<p>Each word's input vector <var>x</var> is multiplied by three learned matrices:</p>
+<p class="eq"><var>q</var> = <var>x</var>W<sup>Q</sup> &nbsp;&nbsp; <var>k</var> = <var>x</var>W<sup>K</sup> &nbsp;&nbsp; <var>v</var> = <var>x</var>W<sup>V</sup><span class="note">The same three matrices are applied to every position. They are the parameters. q, k and v are recomputed for every sentence.</span></p>
+<p><strong>Why three separate projections?</strong> A word does three different jobs. As a <em>query</em>, it describes what it is looking for ("it" looks for an antecedent). As a <em>key</em>, it describes how it should be found ("animal" advertises "animate noun, can be referred to"). As a <em>value</em>, it carries what to hand over once found (the full meaning of "animal"). In Bahdanau attention one vector did both the key and value jobs. Separating them lets each be tuned for its own job.</p>
+
+<p>Stack all positions into matrices and the whole layer becomes one formula, the one on deck 03, slide 12:</p>
+<p class="eq">Attention(Q, K, V) = softmax( QK<sup>⊤</sup> / √<var>d</var><sub>k</sub> ) V<span class="note">QK<sup>⊤</sup> = every query·key score at once (an n × n grid) → row-wise softmax = the weights → × V = the blends. These are lesson 4's three steps, done for every word in parallel.</span></p>
+
+<p><strong>Why divide by √d<sub>k</sub>?</strong> The paper: "for large values of d<sub>k</sub>, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients." If the components of q and k are random with variance 1, then q·k has variance d<sub>k</sub>, so its typical size grows like √d<sub>k</sub>. Dividing by √d<sub>k</sub> brings the scores back to a range where softmax still gives a useful gradient and doesn't collapse into a hard one-hot.<span class="sidenote"><a href="https://arxiv.org/abs/1706.03762">Vaswani et al. 2017</a>, §3.2.1 and footnote 4.</span></p>
+
+<h3>Multi-head attention</h3>
+<p>Run several attentions side by side, each with its own W<sup>Q</sup>, W<sup>K</sup>, W<sup>V</sup>, so each head can weight words by a different criterion (deck 03, slide 13: syntax heads, coreference heads). The original model used <b>h = 8</b> heads of size <b>d<sub>k</sub> = 64</b> each, for d<sub>model</sub> = 512. The heads' outputs are concatenated and projected back. Because each head is smaller, the total cost is "similar to that of single-head attention with full dimensionality."<span class="sidenote">Vaswani et al., §3.2.2.</span></p>
+
+<h2>Change 3 · Word order has to be added back</h2>
+<p>Look at the formula again: nothing in it knows which word came first. Shuffle the input and every word gets exactly the same output, just in a different slot. Deck 03, slide 14 calls this the "permutation invariance flaw": to plain self-attention, a sentence is a bag of words again, just like TF-IDF.</p>
+<p>The fix is to add a <strong>position signal</strong> to each word's vector before the first layer. The original paper used fixed sine and cosine patterns. Modern LLMs use RoPE, which rotates q and k according to position (deck 03, slide 14). BERT (lesson 6) adds a position embedding for each slot.</p>
+
+<div class="callout key">
+  <span class="label">The trade you just made</span>
+  <p><strong>Gained:</strong> all positions computed in parallel, and a 1-hop path between any two words. <strong>Paid:</strong> order has to be injected explicitly, and the score grid is n × n, so cost grows with the <em>square</em> of the length (deck 01, slide 14; FlashAttention on deck 03, slide 49 exists because of this).</p>
+</div>
+
+<h2>Bahdanau is still inside</h2>
+<p>The original Transformer is still an encoder–decoder translator, like lesson 3's, and it uses attention in three places. The encoder has <em>self-attention</em>. The decoder has <em>masked</em> self-attention, where a word may not look at words that come after it. The third is the connection between them: "the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder … This mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models." That third one is lesson 4 exactly, with the RNNs removed around it.</p>
+<p>Each encoder layer is: multi-head self-attention → a feed-forward network applied to each position, with a residual connection and normalisation around each (deck 03, slides 15–16). The original stacks <b>N = 6</b> of these layers.</p>
+
+<h2>What still breaks</h2>
+<div class="callout fail">
+  <span class="label">Trained from scratch, on labelled pairs</span>
+  <p>The 2017 Transformer was trained for translation on sentence pairs. Most tasks (sentiment in Arabic dialects, legal question answering) don't have millions of labelled examples. The way forward was to <em>pre-train</em> on raw text, where every word is its own label, and then adapt. The obvious objective, "predict the next word," was what OpenAI's GPT (2018) did with a left-to-right Transformer. But it lets each word see only its <em>left</em> side, and understanding often needs the right side too. That is lesson 6.</p>
+</div>
+
+<div class="quiz-set" data-title="Check yourself">
+<script type="application/json">
+[
+  {"q": "In <em>self</em>-attention, where do the queries come from?",
+   "options": ["The same sequence as the keys", "The decoder of a separate RNN", "A fixed learned vector per layer", "The previous layer's final output only"],
+   "answer": 0,
+   "why": "Queries, keys and values are all projections of the <em>same</em> sequence's vectors. That is what \"self\" means. In the cross-attention layer, queries come from the decoder and keys and values from the encoder."},
+  {"q": "Why are the scores divided by √d<sub>k</sub>?",
+   "options": ["Keep softmax out of saturated regions", "Make the weights sum to one", "Normalise each word vector's total length", "Reduce the number of attention heads"],
+   "answer": 0,
+   "why": "Dot products grow with dimension (variance d<sub>k</sub>). Very large scores push softmax to near one-hot, where gradients are \"extremely small.\" Making the weights sum to 1 is softmax's job, not the scaling's."},
+  {"q": "Remove positional encodings. Compared with \"man bites dog\", what does \"dog bites man\" produce for the word \"man\"?",
+   "options": ["the same vector as before", "a sign-flipped version of it", "a vector marking it subject", "a random vector each time"],
+   "answer": 0,
+   "why": "Without position signals, \"man\" attends to the same set {man, bites, dog} with the same scores in both sentences, so its output is identical. The model cannot tell who bit whom. This is why position must be added back."},
+  {"q": "Which part of the original Transformer is Bahdanau attention in disguise?",
+   "options": ["decoder cross-attention layers", "bidirectional encoder self-attention", "position-wise feed-forward networks", "sinusoidal positional encodings"],
+   "answer": 0,
+   "why": "Queries from the decoder, keys and values from the encoder output. The paper itself says this \"mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models.\""}
+]
+</script>
+</div>
+
+<div class="recall" data-title="Recall: explain it to a classmate">
+  <p class="prompt">Explain why a Transformer trains much faster than Seq2Seq-with-attention on the same GPU, and name the one thing it had to add back because it dropped the RNN, with the reason.</p>
+  <template class="answer">
+    <p>In an RNN, step t can't start until step t−1 finishes, so the positions of a sentence are processed one after another. Self-attention computes every position's query, key and value, and every query·key score, as a few big matrix multiplications with no dependency between positions. GPUs are built for exactly that kind of work, so all positions are processed at once. Any two words are also one hop apart instead of n.</p>
+    <p>What it had to add back is <b>word order</b>. The attention formula is blind to order (shuffle the input and the outputs are just shuffled), so a position signal (sinusoids, learned embeddings or RoPE) is added to each word's vector.</p>
+  </template>
+</div>
+
+<div class="source-box">
+  <span class="label">Primary source for this lesson</span>
+  <p><a href="https://jalammar.github.io/illustrated-transformer/">Jay Alammar, "The Illustrated Transformer"</a>. Read from "Self-Attention at a High Level" to "Representing The Order of The Sequence Using Positional Encoding." Then read §3.2 of <a href="https://arxiv.org/abs/1706.03762">"Attention Is All You Need"</a>. It's about one page, and you can now follow all of it.</p>
+</div>
+
+<div class="ask-box">
+  <span class="label">Ask your teacher</span>
+  <p>Try asking me: <em>"Why does the decoder need masking but the encoder doesn't?"</em>, <em>"What do the feed-forward layers add if attention already mixes words?"</em> or <em>"Show me the matrix shapes for a 5-word sentence."</em></p>
+</div>
+
+<nav class="pager">
+  <a href="0004-attention.html">← Attention</a>
+  <a href="0006-bert.html">Next: BERT, reading in both directions →</a>
+</nav>
+
+</main>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/attention-lab.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3 · Seq2Seq Bottleneck</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+
+<nav class="course">
+  <a href="0001-the-evolution-map.html">1 · The map</a>
+  <a href="0002-word2vec.html">2 · Word2Vec</a>
+  <a class="here" href="0003-seq2seq-bottleneck.html">3 · Seq2Seq</a>
+  <a href="0004-attention.html">4 · Attention</a>
+  <a href="0005-transformer-self-attention.html">5 · Transformer</a>
+  <a href="0006-bert.html">6 · BERT</a>
+  <a href="../reference/evolution-cheatsheet.html">Cheat sheet</a>
+</nav>
+
+<p class="kicker">Lesson 3 of 6 · Seq2Seq (2014) · about 12 minutes</p>
+<h1>A whole sentence through a keyhole</h1>
+<p class="lede">Word2Vec gave us good word vectors but no way to read a sentence in order or to write one. Seq2Seq adds both by joining two RNNs. It works, but its shape has one built-in flaw. That flaw drives the next two lessons.</p>
+
+<div class="quiz-set" data-title="Warm-up from lesson 2">
+<script type="application/json">
+[
+  {"q": "In skip-gram with negative sampling, what is one training example?",
+   "options": ["a word pair with a label", "a sentence with its sentiment tag", "a document with its TF-IDF vector", "a word with its dictionary definition"],
+   "answer": 0,
+   "why": "Each example is (center word, other word) labelled 1 for a real neighbour or 0 for a random negative sample. No human labels are needed anywhere."}
+]
+</script>
+</div>
+
+<h2>1 · The RNN in one line</h2>
+<p>You've met RNNs in deck 03 (slide 6), so here is only the part that matters:</p>
+<p class="eq"><var>h</var><sub>t</sub> = <var>f</var>( <var>h</var><sub>t−1</sub>, <var>x</var><sub>t</sub> )<span class="note">The hidden state h is a running summary with a <b>fixed size</b>. Each step folds one more word vector x into it. Step t can't start until step t−1 is done.</span></p>
+<p>Keep two facts from that line: the summary never grows, and the computation is a chain.<span class="sidenote">LSTMs and GRUs are gated versions of <var>f</var> that hold on to information longer. They don't change either fact. See <a href="https://web.stanford.edu/~jurafsky/slp3/14.pdf">SLP3 §14.5</a>.</span></p>
+
+<h2>2 · The shape: encoder → context vector → decoder</h2>
+<p>A running example that will return in lesson 4: translate <em>"the black cat sat"</em> into Arabic, <span lang="ar" dir="rtl">جلست القطة السوداء</span> (word by word: <em>sat · the-cat · the-black</em>).</p>
+
+<figure class="wide">
+<svg viewBox="0 0 960 250" role="img" aria-label="Seq2Seq: encoder RNN compresses the sentence into one context vector that starts the decoder RNN">
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" style="fill: var(--ink-soft)"/>
+    </marker>
+    <marker id="a3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" style="fill: var(--fail)"/>
+    </marker>
+  </defs>
+  <text x="30" y="28" font-size="12" font-weight="700" class="t-accent">ENCODER RNN</text>
+  <text x="520" y="28" font-size="12" font-weight="700" class="t-accent">DECODER RNN</text>
+
+  <!-- encoder cells -->
+  <g opacity="0.5">
+    <rect x="30" y="130" width="70" height="40" rx="5" class="box"/><text x="65" y="155" font-size="13" text-anchor="middle">h₁</text>
+    <rect x="120" y="130" width="70" height="40" rx="5" class="box"/><text x="155" y="155" font-size="13" text-anchor="middle">h₂</text>
+    <rect x="210" y="130" width="70" height="40" rx="5" class="box"/><text x="245" y="155" font-size="13" text-anchor="middle">h₃</text>
+  </g>
+  <text x="155" y="112" font-size="11" class="soft" text-anchor="middle">h₁, h₂, h₃: computed, then thrown away</text>
+  <rect x="300" y="130" width="70" height="40" rx="5" class="box" stroke-width="2"/><text x="335" y="155" font-size="13" text-anchor="middle" font-weight="700">h₄</text>
+  <line x1="100" y1="150" x2="118" y2="150" class="stroke-soft" stroke-width="1.5" marker-end="url(#a3)"/>
+  <line x1="190" y1="150" x2="208" y2="150" class="stroke-soft" stroke-width="1.5" marker-end="url(#a3)"/>
+  <line x1="280" y1="150" x2="298" y2="150" class="stroke-soft" stroke-width="1.5" marker-end="url(#a3)"/>
+  <!-- encoder inputs -->
+  <text x="65" y="225" font-size="13" text-anchor="middle">the</text>
+  <text x="155" y="225" font-size="13" text-anchor="middle">black</text>
+  <text x="245" y="225" font-size="13" text-anchor="middle">cat</text>
+  <text x="335" y="225" font-size="13" text-anchor="middle">sat</text>
+  <line x1="65" y1="210" x2="65" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="155" y1="210" x2="155" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="245" y1="210" x2="245" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="335" y1="210" x2="335" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+
+  <!-- context vector keyhole -->
+  <rect x="408" y="118" width="46" height="64" rx="5" class="box-fail" stroke-width="2"/>
+  <text x="431" y="156" font-size="16" text-anchor="middle" font-weight="700" class="t-fail">c</text>
+  <text x="431" y="205" font-size="11" text-anchor="middle" class="t-fail">context vector</text>
+  <text x="431" y="219" font-size="11" text-anchor="middle" class="t-fail">fixed size</text>
+  <line x1="370" y1="150" x2="406" y2="150" style="stroke: var(--fail)" stroke-width="2" marker-end="url(#a3r)"/>
+  <line x1="454" y1="150" x2="518" y2="150" style="stroke: var(--fail)" stroke-width="2" marker-end="url(#a3r)"/>
+
+  <!-- decoder cells -->
+  <rect x="520" y="130" width="70" height="40" rx="5" class="box"/><text x="555" y="155" font-size="13" text-anchor="middle">s₁</text>
+  <rect x="620" y="130" width="70" height="40" rx="5" class="box"/><text x="655" y="155" font-size="13" text-anchor="middle">s₂</text>
+  <rect x="720" y="130" width="70" height="40" rx="5" class="box"/><text x="755" y="155" font-size="13" text-anchor="middle">s₃</text>
+  <rect x="820" y="130" width="70" height="40" rx="5" class="box"/><text x="855" y="155" font-size="13" text-anchor="middle">s₄</text>
+  <line x1="590" y1="150" x2="618" y2="150" class="stroke-soft" stroke-width="1.5" marker-end="url(#a3)"/>
+  <line x1="690" y1="150" x2="718" y2="150" class="stroke-soft" stroke-width="1.5" marker-end="url(#a3)"/>
+  <line x1="790" y1="150" x2="818" y2="150" class="stroke-soft" stroke-width="1.5" marker-end="url(#a3)"/>
+  <!-- decoder outputs -->
+  <text x="555" y="78" font-size="16" text-anchor="middle">جلست</text>
+  <text x="655" y="78" font-size="16" text-anchor="middle">القطة</text>
+  <text x="755" y="78" font-size="16" text-anchor="middle">السوداء</text>
+  <text x="855" y="78" font-size="13" text-anchor="middle">&lt;EOS&gt;</text>
+  <text x="555" y="96" font-size="10" class="soft" text-anchor="middle">(sat)</text>
+  <text x="655" y="96" font-size="10" class="soft" text-anchor="middle">(the cat)</text>
+  <text x="755" y="96" font-size="10" class="soft" text-anchor="middle">(the black)</text>
+  <line x1="555" y1="128" x2="555" y2="102" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="655" y1="128" x2="655" y2="102" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="755" y1="128" x2="755" y2="102" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="855" y1="128" x2="855" y2="102" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <!-- decoder inputs: previous outputs -->
+  <text x="555" y="225" font-size="12" text-anchor="middle">&lt;BOS&gt;</text>
+  <text x="655" y="225" font-size="15" text-anchor="middle">جلست</text>
+  <text x="755" y="225" font-size="15" text-anchor="middle">القطة</text>
+  <text x="855" y="225" font-size="15" text-anchor="middle">السوداء</text>
+  <line x1="555" y1="210" x2="555" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="655" y1="210" x2="655" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="755" y1="210" x2="755" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <line x1="855" y1="210" x2="855" y2="172" class="stroke-soft" stroke-width="1.2" marker-end="url(#a3)"/>
+  <text x="705" y="244" font-size="10" class="soft" text-anchor="middle">each step is fed the previous output word</text>
+</svg>
+<figcaption>Plain Seq2Seq. The encoder's final state <b>h₄</b> becomes the context vector <b>c</b> that starts the decoder. Everything the decoder knows about the English sentence has to pass through <b>c</b>. The earlier encoder states are computed and then discarded.</figcaption>
+</figure>
+
+<p><strong>Encoder:</strong> an RNN reads the source word by word. Its final hidden state is the <strong>context vector</strong> <var>c</var>. <strong>Decoder:</strong> a second RNN starts from <var>c</var> and writes one word per step, feeding each word it writes back in as its next input, until it emits <code>&lt;EOS&gt;</code>. Input and output lengths no longer have to match. That is what "sequence to sequence" means.<span class="sidenote"><a href="https://arxiv.org/abs/1409.3215">Sutskever, Vinyals &amp; Le 2014</a> used multilayer LSTMs and reached 34.8 BLEU on English→French, beating a phrase-based statistical system.</span></p>
+<p class="small muted">Training detail you'll see in textbooks: during training, the decoder is fed the <em>correct</em> previous word rather than its own guess ("teacher forcing"). At inference time it has only its own guesses. See <a href="https://web.stanford.edu/~jurafsky/slp3/14.pdf">SLP3 §14.7</a>.</p>
+
+<h2>3 · The bottleneck, and the evidence for it</h2>
+<p>Look at the size of <var>c</var>. It is fixed: often 256 to 1,024 numbers<span class="sidenote">The typical range quoted in <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/">Alammar's Seq2Seq visualisation</a>.</span>, chosen before training. A 4-word sentence and a 60-word sentence both have to be squeezed into that same vector, and the decoder has <em>no other view</em> of the source. As a rough intuition, the room per source word shrinks as the sentence grows.</p>
+
+<div class="callout fail">
+  <span class="label">Evidence 1 · quality drops with length</span>
+  <p><a href="https://arxiv.org/abs/1409.1259">Cho et al. (2014)</a> studied exactly this. Encoder–decoder translation "performs relatively well on short sentences without unknown words, but its performance degrades rapidly as the length of the sentence and the number of unknown words increase."</p>
+</div>
+
+<div class="callout fail">
+  <span class="label">Evidence 2 · the odd "reverse the input" trick</span>
+  <p>Sutskever et al. found that "reversing the order of the words in all source sentences (but not target sentences) improved the LSTM's performance markedly." Their explanation was that reversal "introduced many short term dependencies." If you feed <em>sat cat black the</em>, the first source word ends up right next to where the decoder starts. A trick that only changes <em>distance</em> helping this much tells you that information fades as it travels through the chain.</p>
+</div>
+
+<p>Now look at the Arabic. The decoder's <em>first</em> word, <span lang="ar">جلست</span> (sat), corresponds to the <em>last</em> English word. Arabic is verb-first, so the alignment crosses over. Plain Seq2Seq has no way to "look at" <em>sat</em> directly. It has to dig the verb back out of <var>c</var>, which is a blend of everything. The reversal trick can't help both word orders at once.</p>
+
+<div class="callout key">
+  <span class="label">What to take away</span>
+  <p>The bottleneck is a problem of <strong>shape</strong>, not of training effort. The encoder computes a useful state for <em>every</em> source word (h₁…h₄) and then the architecture throws all of them away except the last. The obvious question: <em>why not let the decoder look at all of them?</em></p>
+</div>
+
+<h2>4 · What still breaks</h2>
+<p>A single fixed-size <var>c</var> is the only path from source to target. That is the bottleneck. Lesson 4 keeps h₁…h₄ and lets the decoder choose, at every step, which of them to read from.</p>
+
+<div class="quiz-set" data-title="Check yourself">
+<script type="application/json">
+[
+  {"q": "In plain Seq2Seq, how does the decoder access the source sentence?",
+   "options": ["Only through the final encoder state", "By reading every encoder hidden state", "Through the source word embeddings directly", "By attending to the source tokens"],
+   "answer": 0,
+   "why": "The final encoder state <em>is</em> the context vector c. The other hidden states are thrown away. That single path is the bottleneck."},
+  {"q": "Why did reversing the source sentence help Sutskever et al.?",
+   "options": ["It shortened paths between aligned word pairs", "It effectively doubled the available training data", "It enlarged the fixed-size context vector greatly", "It let the decoder read everything backwards"],
+   "answer": 0,
+   "why": "Their words: reversal \"introduced many short term dependencies.\" Early source words end up close to early target words, so their information travels through fewer RNN steps. That points to decay along the chain."},
+  {"q": "Which quantity stays the same whether the source has 6 words or 60?",
+   "options": ["The context vector size", "The encoder step count", "The decoder output length", "The per-sentence compute time"],
+   "answer": 0,
+   "why": "c has a fixed size chosen before training. The number of encoder steps, the output length and the compute time all grow with the sentence, but the channel between encoder and decoder does not."},
+  {"q": "For \"the black cat sat\" → <span lang=\"ar\">جلست القطة السوداء</span>, which English word must the decoder recover first?",
+   "options": ["sat", "the", "black", "cat"],
+   "answer": 0,
+   "why": "Arabic here is verb-first: <span lang=\"ar\">جلست</span> = sat. The first output depends on the <em>last</em> input word. Plain Seq2Seq must dig it out of the blended c. With attention (lesson 4), the decoder can look straight at h<sub>sat</sub>."}
+]
+</script>
+</div>
+
+<div class="recall" data-title="Recall: sketch it">
+  <p class="prompt">On paper, sketch Seq2Seq for "the black cat sat" → Arabic. Mark exactly where the bottleneck is, and write down two pieces of evidence that it hurts.</p>
+  <template class="answer">
+    <ul>
+      <li>Encoder RNN: the → black → cat → sat produces h₁…h₄. Only <b>h₄ = c</b> goes on, and h₁–h₃ are discarded.</li>
+      <li>Decoder RNN: starts from c and writes <span lang="ar">جلست</span>, <span lang="ar">القطة</span>, <span lang="ar">السوداء</span>, &lt;EOS&gt;, feeding each word back in.</li>
+      <li><b>Bottleneck:</b> the arrow h₄ → c → decoder. It is one fixed-size vector for any sentence length.</li>
+      <li><b>Evidence:</b> (1) Cho et al. 2014: quality "degrades rapidly" as sentences get longer. (2) Sutskever et al. 2014: simply reversing the input helped "markedly" because it shortened source-to-target distances.</li>
+    </ul>
+  </template>
+</div>
+
+<div class="source-box">
+  <span class="label">Primary source for this lesson</span>
+  <p><a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/">Jay Alammar, "Visualizing A Neural Machine Translation Model"</a>. Watch the animations <em>up to</em> the word "attention." That's this lesson. The rest is lesson 4. Then read the one-paragraph abstract of <a href="https://arxiv.org/abs/1409.3215">Sutskever et al. 2014</a>.</p>
+</div>
+
+<div class="ask-box">
+  <span class="label">Ask your teacher</span>
+  <p>Try asking me: <em>"Why can't we just make c bigger?"</em>, <em>"What does an LSTM gate actually do?"</em> or <em>"How does the decoder know when to stop?"</em></p>
+</div>
+
+<nav class="pager">
+  <a href="0002-word2vec.html">← Word2Vec</a>
+  <a href="0004-attention.html">Next: Attention, a new context vector per word →</a>
+</nav>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

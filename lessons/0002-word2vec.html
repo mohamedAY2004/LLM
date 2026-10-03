@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2 · Word2Vec</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+
+<nav class="course">
+  <a href="0001-the-evolution-map.html">1 · The map</a>
+  <a class="here" href="0002-word2vec.html">2 · Word2Vec</a>
+  <a href="0003-seq2seq-bottleneck.html">3 · Seq2Seq</a>
+  <a href="0004-attention.html">4 · Attention</a>
+  <a href="0005-transformer-self-attention.html">5 · Transformer</a>
+  <a href="0006-bert.html">6 · BERT</a>
+  <a href="../reference/evolution-cheatsheet.html">Cheat sheet</a>
+</nav>
+
+<p class="kicker">Lesson 2 of 6 · Word2Vec (2013) · about 15 minutes</p>
+<h1>Meaning from the company a word keeps</h1>
+<p class="lede">Deck 03, slide 5 says Word2Vec turns meaning into geometry and shows king − man + woman ≈ queen. It leaves out the surprising part: nobody ever tells the model what a word means. The vectors are a <em>by-product</em> of a prediction task that nobody actually cares about.</p>
+
+<div class="quiz-set" data-title="Warm-up from lesson 1">
+<script type="application/json">
+[
+  {"q": "In a TF-IDF space, what is the dot product of the one-word documents \"doctor\" and \"physician\"?",
+   "options": ["exactly zero in every corpus", "high because they co-occur often", "equal to their IDF product", "negative since they are synonyms"],
+   "answer": 0,
+   "why": "Different tokens are different axes, so the two vectors share no non-zero coordinate. This lesson is about how Word2Vec escapes that."}
+]
+</script>
+</div>
+
+<h2>1 · The fake task</h2>
+<p>Skip-gram slides a small window over raw text. For each <em>center</em> word, it tries to predict the words around it:</p>
+<p class="eq">"I went to <u>see the</u> <b>doctor</b> <u>about my</u> cough"<span class="note">window ±2 → training pairs: (doctor, see), (doctor, the), (doctor, about), (doctor, my)</span></p>
+<p>The model has two lookup tables, both filled with random numbers at the start:</p>
+<ul>
+  <li><strong>E</strong>: one row per word, used when the word is the <em>center</em>. Call a row <var>e</var><sub>doctor</sub>.</li>
+  <li><strong>C</strong>: one row per word, used when the word is a <em>neighbour</em>. Call a row <var>c</var><sub>patient</sub>.</li>
+</ul>
+<p>Training nudges both tables until the predictions improve. Then the prediction task is thrown away and <strong>E is kept</strong>. Those rows are the word vectors.<span class="sidenote">Skip-gram and its mirror image CBOW (predict the center word from its neighbours) come from <a href="https://arxiv.org/abs/1301.3781">Mikolov et al. 2013a</a>. The abstract reports learning "high quality word vectors from a 1.6 billion words data set" in under a day.</span></p>
+
+<h2>2 · Negative sampling: the version people actually train</h2>
+<p>Predicting "which word, out of the whole vocabulary, is the neighbour?" requires a softmax over tens of thousands of words at every step, which is expensive. <a href="https://arxiv.org/abs/1310.4546">Mikolov et al. 2013b</a> replaced it with a much cheaper <strong>yes/no question</strong>:</p>
+<p class="eq">P(real neighbours) = σ( <var>e</var><sub>center</sub> · <var>c</var><sub>word</sub> )<span class="note">σ is the logistic sigmoid, so this is logistic regression on a dot product. Push it toward 1 for real pairs and toward 0 for a few random "negative" words.</span></p>
+<p>Every real pair (doctor, patient) comes with <var>k</var> fake pairs made by sampling random words: (doctor, banana), (doctor, volcano). The model learns to tell real neighbours from noise.</p>
+
+<h3>Worked step (2-dimensional toy vectors)</h3>
+<div class="table-scroll">
+<table>
+  <tr><th>Pair</th><th>Dot product</th><th>σ(dot)</th><th>Target</th><th>Update pushes <var>e</var><sub>doctor</sub>…</th></tr>
+  <tr><td>(doctor, patient)<br><span class="small muted">real</span></td><td class="mono">[0.8, 0.1]·[0.9, 0.2] = 0.74</td><td class="mono">0.68</td><td class="mono">1</td><td><em>toward</em> <var>c</var><sub>patient</sub>, by (1 − 0.68)</td></tr>
+  <tr><td>(doctor, banana)<br><span class="small muted">negative sample</span></td><td class="mono">[0.8, 0.1]·[−0.5, 0.7] = −0.33</td><td class="mono">0.42</td><td class="mono">0</td><td><em>away from</em> <var>c</var><sub>banana</sub>, by 0.42</td></tr>
+</table>
+</div>
+<p>With learning rate 0.5: <span class="mono">e<sub>doctor</sub> ← [0.8, 0.1] + 0.5·0.32·[0.9, 0.2] − 0.5·0.42·[−0.5, 0.7] = [1.05, −0.02]</span>. Recompute: σ(doctor · patient) rises from 0.68 to 0.72, and σ(doctor · banana) falls from 0.42 to 0.37. That is all a single training step does.<span class="sidenote">These are the standard SGNS gradients. <a href="https://web.stanford.edu/~jurafsky/slp3/5.pdf">SLP3 §5.5</a> derives them. The context rows <var>c</var> are updated the same way, and this example skips that.</span></p>
+
+<h2>3 · The key idea: why "doctor" ends up next to "physician"</h2>
+<p>This is the step the slides skip. "Doctor" and "physician" rarely appear in the same window, so no training step ever pulls them <em>toward each other</em>. But:</p>
+<ul>
+  <li>Every time "doctor" appears near "patient", <var>e</var><sub>doctor</sub> moves toward <var>c</var><sub>patient</sub>.</li>
+  <li>Every time "physician" appears near "patient", <var>e</var><sub>physician</sub> moves toward the <em>same</em> <var>c</var><sub>patient</sub>.</li>
+  <li>The same happens for "hospital", "prescribed", "examined" and so on.</li>
+</ul>
+<p>Two words pulled toward the <strong>same set of neighbour vectors</strong> end up near each other, even though they were never compared directly.</p>
+
+<figure>
+<svg viewBox="0 0 640 290" role="img" aria-label="doctor and physician vectors both pulled toward shared context vectors">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" class="t-fix"/>
+    </marker>
+    <marker id="a2f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" class="t-fail"/>
+    </marker>
+  </defs>
+  <!-- shared context cluster -->
+  <ellipse cx="480" cy="105" rx="105" ry="62" class="box-fix" stroke-dasharray="4 3" opacity="0.8"/>
+  <text x="420" y="36" font-size="11" class="t-fix" font-weight="700">shared neighbours (rows of C)</text>
+  <rect x="445" y="70" width="10" height="10" class="t-fix"/><text x="460" y="80" font-size="12">patient</text>
+  <rect x="510" y="95" width="10" height="10" class="t-fix"/><text x="525" y="105" font-size="12">hospital</text>
+  <rect x="455" y="125" width="10" height="10" class="t-fix"/><text x="470" y="135" font-size="12">prescribed</text>
+  <!-- doctor -->
+  <circle cx="110" cy="60" r="7" fill="none" class="stroke-soft" stroke-width="1.5"/>
+  <text x="60" y="45" font-size="12" class="soft">doctor (random start)</text>
+  <path d="M118,62 C230,70 320,95 393,108" fill="none" style="stroke: var(--fix)" stroke-width="1.6" marker-end="url(#a2)"/>
+  <circle cx="400" cy="110" r="7" style="fill: var(--accent)"/>
+  <text x="300" y="100" font-size="12" font-weight="600">doctor</text>
+  <!-- physician -->
+  <circle cx="170" cy="240" r="7" fill="none" class="stroke-soft" stroke-width="1.5"/>
+  <text x="110" y="268" font-size="12" class="soft">physician (random start)</text>
+  <path d="M177,236 C260,200 340,160 400,136" fill="none" style="stroke: var(--fix)" stroke-width="1.6" marker-end="url(#a2)"/>
+  <circle cx="407" cy="133" r="7" style="fill: var(--accent)"/>
+  <text x="318" y="158" font-size="12" font-weight="600">physician</text>
+  <!-- banana -->
+  <circle cx="560" cy="240" r="7" style="fill: var(--ink-soft)"/>
+  <text x="500" y="268" font-size="12">banana (neighbours: ripe, peel)</text>
+  <path d="M552,232 L520,200" fill="none" style="stroke: var(--fail)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#a2f)"/>
+  <text x="560" y="205" font-size="10" class="t-fail">negatives push</text>
+  <text x="560" y="217" font-size="10" class="t-fail">it elsewhere</text>
+</svg>
+<figcaption>Schematic: this 2-D picture is for intuition only (real embeddings have hundreds of dimensions). Doctor and physician never meet in a window, but both are pulled toward the same neighbour vectors, so they end up close. Negative samples keep unrelated words from collapsing into the same spot.</figcaption>
+</figure>
+
+<div class="callout key">
+  <span class="label">Remember this</span>
+  <p>Firth's "you shall know a word by the company it keeps" (deck 03, slide 5) is not a metaphor here. It is literally the gradient: <em>shared neighbours → shared pull → nearby vectors.</em> Word2Vec turns a linguistic hypothesis into an optimisation problem.</p>
+</div>
+
+<p>The analogy trick (king − man + woman ≈ queen) is a by-product of the same process. When many word pairs differ in the same way (man/woman, king/queen, uncle/aunt), that difference tends to show up as a roughly consistent <em>direction</em> in the space. The "≈" matters: the result is the <em>nearest</em> word to the computed point, not an exact hit.<span class="sidenote">For what analogies really show and where they fail, see <a href="https://web.stanford.edu/~jurafsky/slp3/5.pdf">SLP3 §5.7 "Semantic properties of embeddings"</a>.</span></p>
+
+<h2>4 · What still breaks</h2>
+<div class="callout fail">
+  <span class="label">Break 1 · the bank problem</span>
+  <p>E has <strong>one row per word type</strong>. "I sat on the river <b>bank</b>" and "the <b>bank</b> approved my loan" look up the same row. Its vector ends up a blend of both senses, weighted by how often each sense appears. This is a <em>static embedding</em>. It stays unsolved until lesson 6.</p>
+</div>
+<div class="callout fail">
+  <span class="label">Break 2 · no sentence machinery</span>
+  <p>You now have good word vectors, but no way to read a sentence <em>in order</em> or to <em>generate</em> one. Averaging the vectors in "dog bites man" and "man bites dog" gives identical results. Translation needs both. That is lesson 3.</p>
+</div>
+
+<div class="quiz-set" data-title="Check yourself">
+<script type="application/json">
+[
+  {"q": "After training skip-gram, what do we actually keep?",
+   "options": ["The learned table of word vectors", "The neighbour predictions on the corpus", "The softmax over the whole vocabulary", "The random negative samples we drew"],
+   "answer": 0,
+   "why": "The prediction task is scaffolding. The rows of E, the center-word table, are the product. That is why it's called a <em>fake</em> task."},
+  {"q": "\"Doctor\" and \"physician\" almost never share a window. Why do their vectors still end up close?",
+   "options": ["They are pulled toward the same neighbours", "Negative sampling pairs them together as positives", "The model is told they are synonyms", "Their spellings share many of the letters"],
+   "answer": 0,
+   "why": "Both words appear near patient, hospital, prescribed and similar words, so their gradients pull them toward the <em>same</em> context vectors. Word2Vec has no dictionary, and each word is an indivisible token to it, so spelling plays no part."},
+  {"q": "What does negative sampling change about the training task?",
+   "options": ["Big softmax becomes a binary classifier", "Rare words get dropped from vocabulary", "Word order inside the window matters", "Each word gets several vectors instead"],
+   "answer": 0,
+   "why": "Instead of a softmax over the whole vocabulary, each step asks \"real neighbour, or random noise?\" with a sigmoid of a dot product. That is logistic regression, which you already know from deck 02."},
+  {"q": "\"I sat on the river bank\" / \"the bank approved my loan\". How many vectors does Word2Vec give \"bank\"?",
+   "options": ["One, shared by both senses", "Two, one for each sense", "One for every sentence occurrence", "None, because it is ambiguous"],
+   "answer": 0,
+   "why": "A static embedding is just a lookup-table row, so both sentences get the same vector, a blend of both senses. Contextual embeddings (BERT, lesson 6) fix this."}
+]
+</script>
+</div>
+
+<div class="recall" data-title="Recall: explain it to a classmate">
+  <p class="prompt">In 3–4 sentences, explain how Word2Vec makes "doctor" and "physician" similar without ever being told they're synonyms. Use the words <em>neighbour</em>, <em>pull</em> and <em>shared</em>.</p>
+  <template class="answer">
+    <p>Word2Vec trains on a fake task: given a center word, tell real neighbours in a small window apart from random words (skip-gram with negative sampling). Each real pair <em>pulls</em> the center word's vector toward that neighbour's context vector, and each random pair pushes it away. "Doctor" and "physician" rarely appear together, but they have <em>shared</em> neighbours (patient, hospital, prescribed), so both are pulled toward the same context vectors and end up close. Similar company leads to similar vectors, which is the distributional hypothesis turned into gradient descent.</p>
+  </template>
+</div>
+
+<div class="source-box">
+  <span class="label">Primary source for this lesson</span>
+  <p><a href="https://jalammar.github.io/illustrated-word2vec/">Jay Alammar, "The Illustrated Word2vec"</a>. Read from "Skipgram" to "Word2vec Training Process." It animates the same pull and push you just worked through. For the maths, see <a href="https://web.stanford.edu/~jurafsky/slp3/5.pdf">SLP3 §5.5</a>.</p>
+</div>
+
+<div class="ask-box">
+  <span class="label">Ask your teacher</span>
+  <p>Try asking me: <em>"Why do we need two tables E and C instead of one?"</em>, <em>"How are the negative words chosen?"</em> or <em>"Walk me through a second update step."</em></p>
+</div>
+
+<nav class="pager">
+  <a href="0001-the-evolution-map.html">← The map</a>
+  <a href="0003-seq2seq-bottleneck.html">Next: Seq2Seq and the bottleneck →</a>
+</nav>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

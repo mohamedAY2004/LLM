@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1 · The Evolution Map</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+
+<nav class="course">
+  <a class="here" href="0001-the-evolution-map.html">1 · The map</a>
+  <a href="0002-word2vec.html">2 · Word2Vec</a>
+  <a href="0003-seq2seq-bottleneck.html">3 · Seq2Seq</a>
+  <a href="0004-attention.html">4 · Attention</a>
+  <a href="0005-transformer-self-attention.html">5 · Transformer</a>
+  <a href="0006-bert.html">6 · BERT</a>
+  <a href="../reference/evolution-cheatsheet.html">Cheat sheet</a>
+</nav>
+
+<p class="kicker">Lesson 1 of 6 · about 10 minutes</p>
+<h1>One failure at a time</h1>
+<p class="lede">Your decks treat TF-IDF, Word2Vec, RNNs, Transformers and BERT as separate topics. They are really one chain. Each step exists because the step before it broke in a specific way that you can name. Learn the chain first, and every later detail has a place to attach.</p>
+
+<p>This lesson covers only the chain: five breaks and five fixes. Each of the next five lessons zooms into one link and works through the hard part the slides compress. Here, aim to be able to say <em>"X broke because ___, so Y ___"</em> for every step, from memory.</p>
+
+<h2>Where you already are</h2>
+<p>Decks 01–02 left you with TF-IDF: a document is a row of weighted word counts, and every vocabulary word is its own column. The decks already point to the two cracks this course follows:</p>
+<ul>
+  <li><strong>No similarity between different words.</strong> "Doctor" vs "Physician" scores <code>0.00</code> (deck 02, slide 24). Each word is its own axis, at 90° to every other word.</li>
+  <li><strong>No order.</strong> "Not bad, very good" and "Not good, very bad" get the same vector (deck 01, slide 18). It's a bag.</li>
+</ul>
+<p>Those two cracks turn into two separate lines of work. Keep them apart in your head. That is the single most useful idea in this lesson.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 960 250" role="img" aria-label="Two threads, word meaning and sequence processing, merging into BERT">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="t-accent"/>
+    </marker>
+  </defs>
+  <!-- Thread labels -->
+  <text x="20" y="22" font-size="12" font-weight="700" class="t-accent">THREAD A · what a word's vector means</text>
+  <text x="20" y="142" font-size="12" font-weight="700" class="t-accent">THREAD B · how a sentence is processed</text>
+
+  <!-- Thread A boxes -->
+  <rect x="20" y="34" width="190" height="56" rx="6" class="box"/>
+  <text x="32" y="56" font-size="14" font-weight="600">TF-IDF</text>
+  <text x="32" y="76" font-size="11" class="soft">one axis per word: no similarity</text>
+  <rect x="250" y="34" width="210" height="56" rx="6" class="box"/>
+  <text x="262" y="56" font-size="14" font-weight="600">Word2Vec · 2013</text>
+  <text x="262" y="76" font-size="11" class="soft">dense vector, but one per word</text>
+  <line x1="210" y1="62" x2="248" y2="62" class="stroke-soft" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="460" y1="62" x2="768" y2="62" class="stroke-soft" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="480" y="54" font-size="11" class="t-fail">"bank" still has one vector, until BERT</text>
+
+  <!-- Thread B boxes -->
+  <rect x="20" y="154" width="140" height="56" rx="6" class="box"/>
+  <text x="32" y="176" font-size="14" font-weight="600">Bag of words</text>
+  <text x="32" y="196" font-size="11" class="soft">order thrown away</text>
+  <rect x="190" y="154" width="160" height="56" rx="6" class="box"/>
+  <text x="202" y="176" font-size="14" font-weight="600">Seq2Seq · 2014</text>
+  <text x="202" y="196" font-size="11" class="soft">RNNs read in order</text>
+  <rect x="380" y="154" width="180" height="56" rx="6" class="box"/>
+  <text x="392" y="176" font-size="14" font-weight="600">+ Attention · 2015</text>
+  <text x="392" y="196" font-size="11" class="soft">look back at every word</text>
+  <rect x="590" y="154" width="160" height="56" rx="6" class="box"/>
+  <text x="602" y="176" font-size="14" font-weight="600">Transformer · 2017</text>
+  <text x="602" y="196" font-size="11" class="soft">attention only, no RNN</text>
+  <line x1="160" y1="182" x2="188" y2="182" class="stroke-soft" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="350" y1="182" x2="378" y2="182" class="stroke-soft" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="560" y1="182" x2="588" y2="182" class="stroke-soft" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="750" y1="182" x2="768" y2="182" class="stroke-soft" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- BERT -->
+  <rect x="770" y="34" width="170" height="176" rx="8" class="box-fix" stroke-width="2"/>
+  <text x="784" y="62" font-size="16" font-weight="700" class="t-fix">BERT · 2018</text>
+  <text x="784" y="88" font-size="11">Transformer encoder</text>
+  <text x="784" y="104" font-size="11">+ masked-word training</text>
+  <text x="784" y="120" font-size="11">on raw text</text>
+  <text x="784" y="150" font-size="11" class="t-fix">→ each word's vector</text>
+  <text x="784" y="166" font-size="11" class="t-fix">depends on its sentence</text>
+  <text x="784" y="190" font-size="11" class="soft">both threads meet here</text>
+</svg>
+<figcaption>Two lines of work that meet at BERT. Thread A asks how to represent a single word. Thread B asks how to process a whole sentence in order. BERT is where a Thread B machine finally fixes the Thread A problem (the "bank" problem) that Word2Vec left open.</figcaption>
+</figure>
+
+<h2>The chain</h2>
+<p>Read each card as "what it does → what breaks." The orange line on each card is the reason the next card exists.</p>
+
+<ol class="chain">
+  <li>
+    <span class="name">TF-IDF / Bag of Words</span><span class="year">classical</span>
+    <p class="idea">A document is a vector of weighted word counts, one axis per vocabulary word. It works well for keyword search and linear classifiers (deck 02).</p>
+    <p class="breaks"><b>Breaks:</b> two documents are similar only if they share the <em>exact same tokens</em>, so doctor · physician = 0. Word order is lost.</p>
+  </li>
+  <li>
+    <span class="name">Word2Vec</span><span class="year">2013 · Mikolov et al.</span>
+    <p class="idea">Each word gets a learned, dense vector (a few hundred numbers). The model learns them by predicting which words appear nearby, so words with similar neighbours end up close together.<span class="sidenote">Original papers: <a href="https://arxiv.org/abs/1301.3781">Mikolov et al. 2013a</a> (skip-gram, CBOW) and <a href="https://arxiv.org/abs/1310.4546">2013b</a> (negative sampling). Lesson 2 covers the training trick.</span></p>
+    <p class="breaks"><b>Breaks:</b> each word has <em>one</em> vector in every context ("river bank" = "bank loan"). It also provides nothing for reading a sentence in order or writing one out.</p>
+  </li>
+  <li>
+    <span class="name">Seq2Seq (encoder–decoder RNNs)</span><span class="year">2014 · Sutskever et al.; Cho et al.</span>
+    <p class="idea">One RNN reads the input word by word and folds it into a hidden state. Its final state, the <strong>context vector</strong>, is passed to a second RNN that writes the output one word at a time. Order finally matters, and the input and output can be any length.</p>
+    <p class="breaks"><b>Breaks:</b> the whole sentence has to fit into one fixed-size vector (<strong>the bottleneck</strong>). Translation quality "degrades rapidly as the length of the sentence … increase[s]"<span class="sidenote"><a href="https://arxiv.org/abs/1409.1259">Cho et al. 2014</a>, abstract.</span>.</p>
+  </li>
+  <li>
+    <span class="name">Seq2Seq + attention</span><span class="year">2014/15 · Bahdanau, Cho, Bengio</span>
+    <p class="idea">Keep <em>every</em> encoder hidden state. Before writing each output word, the decoder scores all of them, turns the scores into weights with softmax, and takes a weighted average. The result is a <em>new</em> context vector for every output word.</p>
+    <p class="breaks"><b>Breaks:</b> it still runs on RNNs, so word <var>t</var> can't be processed until word <var>t</var>−1 is done. Training can't run in parallel across the sentence (deck 03, slide 6).</p>
+  </li>
+  <li>
+    <span class="name">Transformer</span><span class="year">2017 · Vaswani et al.</span>
+    <p class="idea">Remove the recurrence and keep only attention. Every word attends to every other word in the same sentence (<strong>self-attention</strong>), and all positions are computed at once.</p>
+    <p class="breaks"><b>Breaks (for our story):</b> it was trained on one labelled task (translation pairs), and most tasks lack that much labelled data. The obvious way to learn from raw text is next-word prediction, but that only lets each word see its left side.</p>
+  </li>
+  <li>
+    <span class="name">BERT</span><span class="year">2018 · Devlin et al.</span>
+    <p class="idea">Use only the Transformer <em>encoder</em>. Pre-train it on 3.3 billion words of raw text by hiding 15% of the words and predicting them from <em>both</em> sides (masked LM), then fine-tune it on your task. Each word's output vector now depends on the whole sentence, so "bank" gets a different vector in each sense. That closes the break from card 2.</p>
+  </li>
+</ol>
+
+<div class="callout key">
+  <span class="label">The one-sentence version</span>
+  <p>Word vectors got <em>dense</em> (Word2Vec), sentences got <em>ordered</em> (Seq2Seq), the decoder learned to <em>look back</em> (attention), the RNN was <em>dropped</em> (Transformer), and the encoder learned from <em>raw text in both directions</em> (BERT).</p>
+</div>
+
+<h2>How to use the next five lessons</h2>
+<ul>
+  <li>Do one or two lessons per sitting, not all six. Spacing is what moves knowledge from "I followed it" to "I still know it next week."</li>
+  <li>Every lesson opens with a warm-up question on the <em>previous</em> lesson. Answer it before scrolling. That retrieval is the point.</li>
+  <li>The quizzes shuffle their answers and every option has the same length, so the layout gives nothing away. If you get one wrong, read the explanation and come back in a day or two.</li>
+  <li>The <a href="../reference/evolution-cheatsheet.html">cheat sheet</a> compresses all six lessons onto one printable page. Use it for review, not for first learning.</li>
+</ul>
+
+<div class="quiz-set" data-title="Check yourself">
+<script type="application/json">
+[
+  {"q": "Deck 02 shows cosine(\"doctor\", \"physician\") = 0.00 under TF-IDF. Which property of TF-IDF causes that?",
+   "options": ["Each word gets its own separate axis", "Stop words were removed before vectorizing text", "IDF weighting shrinks the rare medical words", "Cosine similarity ignores the length of vectors"],
+   "answer": 0,
+   "why": "Each vocabulary word is its own dimension, at 90° to every other. Two vectors overlap only where the <em>same token</em> appears, so \"doctor\" and \"physician\" can never contribute to each other's score, however related they are."},
+  {"q": "A Seq2Seq translator handles 8-word sentences well but fails on 40-word ones. What is this failure called in this course?",
+   "options": ["the fixed-size bottleneck", "the stop-word problem", "the static-embedding problem", "the exploding-gradient problem"],
+   "answer": 0,
+   "why": "Every sentence, of any length, has to fit into the same fixed-size context vector. Cho et al. (2014) measured quality dropping sharply as sentences get longer. Attention (lesson 4) is the fix."},
+  {"q": "What did the Transformer remove that Seq2Seq-with-attention still had?",
+   "options": ["The recurrent RNN connections", "The attention weight softmax", "The word embedding layer", "The encoder-decoder split entirely"],
+   "answer": 0,
+   "why": "Attention stayed and became the whole model. Embeddings stayed, and the original Transformer is still an encoder–decoder. What went was the <em>recurrence</em>, which is why all positions can be computed at the same time."},
+  {"q": "Which Word2Vec limitation does BERT finally solve?",
+   "options": ["one vector per word type", "vocabulary too large to store", "training takes far too long", "vectors have too many dimensions"],
+   "answer": 0,
+   "why": "Word2Vec gives \"bank\" the same vector in \"river bank\" and \"bank loan\". BERT's output for each token is computed from the whole sentence, so the two uses get different vectors. These are called <em>contextual embeddings</em>."},
+  {"q": "Why couldn't BERT simply be pre-trained with next-word prediction, like GPT?",
+   "options": ["It would only see left context", "Next-word prediction needs expensive human labels", "Encoders cannot output a probability distribution", "Predicting words is too computationally expensive"],
+   "answer": 0,
+   "why": "Next-word prediction means word <var>t</var> may only look at words before it. BERT wants both sides, so it hides words and predicts them instead. Lesson 6 explains why simply allowing both sides would let the model cheat."}
+]
+</script>
+</div>
+
+<div class="recall" data-title="Recall from memory">
+  <p class="prompt">Without scrolling up, write the five transitions as "<em>X broke because ___, so Y ___</em>."</p>
+  <template class="answer">
+    <ol>
+      <li><strong>TF-IDF</strong> broke because each word is its own axis (no similarity) and order is lost, <strong>so Word2Vec</strong> learned dense vectors where words with similar neighbours sit close together.</li>
+      <li><strong>Word2Vec</strong> broke because each word gets one vector in every context and there was no way to read or write a sentence, <strong>so Seq2Seq</strong> used an RNN encoder and decoder to handle ordered sequences.</li>
+      <li><strong>Seq2Seq</strong> broke because the whole sentence had to fit through one fixed-size context vector, <strong>so attention</strong> let the decoder take a fresh weighted average of <em>all</em> encoder states for each output word.</li>
+      <li><strong>Attention-on-RNNs</strong> broke because recurrence is sequential and slow to train, <strong>so the Transformer</strong> dropped the RNN and used self-attention across all positions at once.</li>
+      <li><strong>The Transformer</strong> needed labelled data per task, and next-word pre-training only sees the left side, <strong>so BERT</strong> pre-trained an encoder by predicting masked words from both sides, then fine-tuned it.</li>
+    </ol>
+  </template>
+</div>
+
+<div class="source-box">
+  <span class="label">Primary source for this lesson</span>
+  <p><a href="https://jalammar.github.io/illustrated-bert/">Jay Alammar, "The Illustrated BERT, ELMo, and co."</a>. Read from "Word Embedding Recap" to "BERT: From Decoders to Encoders." It covers the same arc from the other end, including two stepping stones this course skips (ELMo and GPT-1). About 20 minutes.</p>
+</div>
+
+<div class="ask-box">
+  <span class="label">Ask your teacher</span>
+  <p>Anything unclear, or want a card explained another way? Ask me (Claude) in the chat. For example: <em>"Why did RNNs have to process one word at a time?"</em> or <em>"Give me a different example of the bottleneck."</em> No question is too basic.</p>
+</div>
+
+<nav class="pager">
+  <span></span>
+  <a href="0002-word2vec.html">Next: Word2Vec, meaning from the company a word keeps →</a>
+</nav>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4 · Bahdanau Attention</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+
+<nav class="course">
+  <a href="0001-the-evolution-map.html">1 · The map</a>
+  <a href="0002-word2vec.html">2 · Word2Vec</a>
+  <a href="0003-seq2seq-bottleneck.html">3 · Seq2Seq</a>
+  <a class="here" href="0004-attention.html">4 · Attention</a>
+  <a href="0005-transformer-self-attention.html">5 · Transformer</a>
+  <a href="0006-bert.html">6 · BERT</a>
+  <a href="../reference/evolution-cheatsheet.html">Cheat sheet</a>
+</nav>
+
+<p class="kicker">Lesson 4 of 6 · Attention (2014–15) · about 20 minutes · the most important lesson</p>
+<h1>A new context vector for every word you write</h1>
+<p class="lede">Bahdanau, Cho and Bengio named the problem outright: "the use of a fixed-length vector is a bottleneck." Their fix underlies everything after it: Transformers, BERT and GPT. Once you can run it by hand, deck 03's Q/K/V slide is only new names for the same thing.</p>
+
+<div class="quiz-set" data-title="Warm-up from lesson 3">
+<script type="application/json">
+[
+  {"q": "In plain Seq2Seq, what does the architecture throw away?",
+   "options": ["All encoder states except the final", "The decoder's own previous output words", "The word embeddings after encoding them", "The target sentence during training time"],
+   "answer": 0,
+   "why": "h₁…h<sub>n−1</sub> are computed and then discarded, and only h<sub>n</sub> = c reaches the decoder. Attention's first move is simply <em>not throwing them away</em>."}
+]
+</script>
+</div>
+
+<h2>1 · Keep every encoder state</h2>
+<p>The encoder runs as before, but now <em>all</em> of its hidden states h₁…h<sub>n</sub> are handed to the decoder. Bahdanau et al. used a <em>bidirectional</em> RNN, one pass left→right and one right→left, and concatenated the two states at each position. As a result, "each annotation h<sub>i</sub> contains information about the whole input sequence with a strong focus on the parts surrounding the i-th word."<span class="sidenote">Quoted from <a href="https://arxiv.org/abs/1409.0473">Bahdanau et al. 2014</a>, §3. The paper calls the encoder states "annotations." This course calls them <em>encoder hidden states</em>.</span> Think of h<sub>j</sub> as <em>"word j, seen in context."</em></p>
+
+<h2>2 · Three steps at every decoder step</h2>
+<p>Before writing output word <var>i</var>, the decoder takes its current state <var>s</var><sub>i−1</sub> and does this:</p>
+
+<div class="eq">
+  ① score &nbsp; <var>e</var><sub>ij</sub> = <var>a</var>( <var>s</var><sub>i−1</sub>, <var>h</var><sub>j</sub> ) &nbsp;&nbsp;for every source position j
+  <span class="note">How relevant is source word j to what I'm about to write? Bahdanau's <var>a</var> is a tiny neural net: v<sub>a</sub><sup>⊤</sup> tanh(W<sub>a</sub> s<sub>i−1</sub> + U<sub>a</sub> h<sub>j</sub>), called "additive" attention. A plain dot product s·h also works and is faster (lab below).</span>
+</div>
+<div class="eq">
+  ② normalise &nbsp; α<sub>ij</sub> = exp(<var>e</var><sub>ij</sub>) / Σ<sub>k</sub> exp(<var>e</var><sub>ik</sub>)
+  <span class="note">Softmax: the weights are ≥ 0 and add up to 1 across the source positions.</span>
+</div>
+<div class="eq">
+  ③ blend &nbsp; <var>c</var><sub>i</sub> = Σ<sub>j</sub> α<sub>ij</sub> <var>h</var><sub>j</sub>
+  <span class="note">A context vector built <b>fresh for output word i</b>. The decoder uses c<sub>i</sub>, together with s<sub>i−1</sub> and the previous word, to produce s<sub>i</sub> and the next word.</span>
+</div>
+
+<p>Compare with lesson 3: there was <strong>one</strong> <var>c</var> for the whole sentence. Now there is a <strong><var>c</var><sub>i</sub> for every output word</strong>, each a different mix of the same encoder states.<span class="sidenote">The Transformer paper compares the two scoring functions: "dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code" (<a href="https://arxiv.org/abs/1706.03762">Vaswani et al. 2017</a>, §3.2.1).</span></p>
+
+<figure>
+<svg viewBox="0 0 640 250" role="img" aria-label="Decoder about to write the first Arabic word attends mostly to the encoder state for 'sat'">
+  <defs>
+    <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" style="fill: var(--ink-soft)"/>
+    </marker>
+  </defs>
+  <!-- encoder states -->
+  <rect x="20"  y="180" width="80" height="36" rx="5" class="box"/><text x="60"  y="203" font-size="12" text-anchor="middle">h: the</text>
+  <rect x="120" y="180" width="80" height="36" rx="5" class="box"/><text x="160" y="203" font-size="12" text-anchor="middle">h: black</text>
+  <rect x="220" y="180" width="80" height="36" rx="5" class="box"/><text x="260" y="203" font-size="12" text-anchor="middle">h: cat</text>
+  <rect x="320" y="180" width="80" height="36" rx="5" class="box-fix" stroke-width="2"/><text x="360" y="203" font-size="12" text-anchor="middle" font-weight="700">h: sat</text>
+  <text x="210" y="240" font-size="11" class="soft" text-anchor="middle">all encoder states are kept</text>
+  <!-- weighted lines to sum node -->
+  <line x1="60"  y1="178" x2="300" y2="92" style="stroke: var(--accent)" stroke-width="0.8" opacity="0.5"/>
+  <line x1="160" y1="178" x2="302" y2="94" style="stroke: var(--accent)" stroke-width="0.8" opacity="0.5"/>
+  <line x1="260" y1="178" x2="305" y2="96" style="stroke: var(--accent)" stroke-width="1" opacity="0.5"/>
+  <line x1="360" y1="178" x2="316" y2="96" style="stroke: var(--accent)" stroke-width="7"/>
+  <text x="45"  y="160" font-size="10" class="t-accent">0.02</text>
+  <text x="170" y="150" font-size="10" class="t-accent">0.02</text>
+  <text x="262" y="150" font-size="10" class="t-accent">0.02</text>
+  <text x="352" y="150" font-size="11" font-weight="700" class="t-accent">0.94</text>
+  <!-- sum node -->
+  <circle cx="310" cy="80" r="17" class="box" stroke-width="1.5"/>
+  <text x="310" y="86" font-size="16" text-anchor="middle">Σ</text>
+  <text x="310" y="46" font-size="12" text-anchor="middle" font-weight="700">c₁</text>
+  <line x1="327" y1="80" x2="448" y2="80" class="stroke-soft" stroke-width="1.5" marker-end="url(#a4)"/>
+  <!-- decoder -->
+  <rect x="450" y="60" width="80" height="40" rx="5" class="box"/><text x="490" y="85" font-size="13" text-anchor="middle">s₁</text>
+  <text x="490" y="140" font-size="11" class="soft" text-anchor="middle">query: s₀ (decoder</text>
+  <text x="490" y="154" font-size="11" class="soft" text-anchor="middle">state before step 1)</text>
+  <line x1="530" y1="80" x2="568" y2="80" class="stroke-soft" stroke-width="1.5" marker-end="url(#a4)"/>
+  <text x="600" y="86" font-size="18" text-anchor="middle">جلست</text>
+  <text x="600" y="104" font-size="10" class="soft" text-anchor="middle">(sat)</text>
+</svg>
+<figcaption>Decoder step 1, writing <span lang="ar">جلست</span> ("sat"). The line widths are the attention weights α₁ⱼ. Almost all the weight lands on h<sub>sat</sub>, the <em>last</em> English word, so the verb-first reordering from lesson 3 stops being a problem. The weights come from the toy numbers in the lab below.</figcaption>
+</figure>
+
+<h2>3 · Run it yourself</h2>
+<p>Toy numbers, hand-picked so that you can read them. Each encoder state has 3 made-up features [noun "cat", colour, action]. Real models learn hundreds of unlabeled dimensions. The lab uses a dot-product score for clarity. Click each preset, then <strong>edit the query numbers</strong> and watch the weights move.</p>
+
+<div class="attn-lab" data-title="Attention lab · one decoder step">
+<script type="application/json">
+{
+  "dims": ["noun: cat", "colour", "action"],
+  "scale": false,
+  "queryName": "s (decoder state)",
+  "outName": "c (context vector)",
+  "keys": [
+    {"label": "the",   "k": [0.5, 0.1, 0.0]},
+    {"label": "black", "k": [0.3, 2.0, 0.0]},
+    {"label": "cat",   "k": [2.0, 0.4, 0.1]},
+    {"label": "sat",   "k": [0.2, 0.0, 2.0]}
+  ],
+  "queries": [
+    {"label": "about to write جلست (sat)",        "q": [0.0, 0.0, 2.0]},
+    {"label": "about to write القطة (the cat)",   "q": [2.0, 0.0, 0.0]},
+    {"label": "about to write السوداء (the black)", "q": [0.3, 2.0, 0.0]}
+  ],
+  "heatmap": true
+}
+</script>
+</div>
+
+<p>The heatmap at the bottom is the kind of figure in Bahdanau et al.'s paper (their Figure 3). Rows are output words and columns are source words. Notice that it is <em>not</em> a diagonal. The model is free to read the source in any order the target language needs.</p>
+
+<h2>4 · Four things the slides don't say</h2>
+<h3>a. Nobody labels the alignments</h3>
+<p>The model is trained <em>only</em> to translate. The weights α are whatever makes translation work. Yet in the paper's analysis, "the (soft-)alignments found by the model agree well with our intuition." The alignment emerges on its own. It is not supervised.<span class="sidenote"><a href="https://arxiv.org/abs/1409.0473">Bahdanau et al.</a>, abstract.</span></p>
+<h3>b. "Soft" is what makes it trainable</h3>
+<p>A hard choice ("read <em>only</em> h<sub>sat</sub>") has no gradient. A softmax-weighted blend is smooth, so backpropagation can adjust the scoring function along with the rest of the network. The paper's phrase is a "(soft-)search" over the source.</p>
+<h3>c. Why the bottleneck disappears</h3>
+<p>Every output step has a direct, one-step route to every source position, whatever the sentence length. In the paper's Figure 2, the attention model (RNNsearch-50) keeps its BLEU score on long sentences, while the plain encoder–decoder (RNNenc) falls off.</p>
+<h3>d. The weights are not parameters</h3>
+<p>The <em>scoring function</em> (W<sub>a</sub>, U<sub>a</sub>, v<sub>a</sub>) is learned and fixed after training. The weights α are <em>recomputed</em> for every sentence and every output step. Mixing these two up is the most common misconception about attention.</p>
+
+<h2>5 · Rename it: query, key, value</h2>
+<p>Deck 03, slide 12 gives Q, K, V without saying where they come from. They come from here:</p>
+<div class="table-scroll">
+<table>
+  <tr><th>Role</th><th>Deck 03's description</th><th>In Bahdanau attention</th></tr>
+  <tr><td><strong>Query</strong></td><td>what this token is searching for</td><td>decoder state <var>s</var><sub>i−1</sub></td></tr>
+  <tr><td><strong>Key</strong></td><td>the label describing what it offers (used to <em>score</em>)</td><td>encoder state <var>h</var><sub>j</sub></td></tr>
+  <tr><td><strong>Value</strong></td><td>the content actually passed on (what gets <em>blended</em>)</td><td>encoder state <var>h</var><sub>j</sub>, the <em>same</em> vector as the key</td></tr>
+</table>
+</div>
+<div class="callout key">
+  <span class="label">The bridge to lesson 5</span>
+  <p>In Bahdanau attention, keys and values are the same vectors, and the query comes from a <em>different</em> sequence (the decoder). The Transformer changes both: it gives keys and values separate learned versions, and it lets the query come from the <em>same</em> sentence. That second change is <strong>self-attention</strong>.</p>
+</div>
+
+<h2>6 · What still breaks</h2>
+<div class="callout fail">
+  <span class="label">The RNN underneath</span>
+  <p>Attention sits <em>on top of</em> RNNs. Each h<sub>j</sub> still waits for h<sub>j−1</sub>, and each s<sub>i</sub> still waits for s<sub>i−1</sub>. Training can't parallelise across positions: "thousands of GPU cores sit completely idle" (deck 03, slide 6). Inside the encoder, word 1 and word 30 still interact only through about 30 recurrent steps. The attention part works well. The recurrent part is what holds things back.</p>
+</div>
+
+<div class="quiz-set" data-title="Check yourself">
+<script type="application/json">
+[
+  {"q": "In Bahdanau attention, what plays the role of the <em>query</em> at output step i?",
+   "options": ["The previous decoder hidden state", "The current source word embedding", "The final encoder hidden state", "The sum of all states"],
+   "answer": 0,
+   "why": "The query is s<sub>i−1</sub>, the decoder's state just before writing word i, which amounts to \"what I need next.\" The encoder states are the keys and values."},
+  {"q": "For one output step, the weights α<sub>i1</sub> … α<sub>in</sub> always:",
+   "options": ["are non-negative and sum to one", "are exactly one-hot on one word", "are fixed once training has finished", "are shared across every output step"],
+   "answer": 0,
+   "why": "They are a softmax output. They are soft, so not one-hot, and they are recomputed for every sentence and every step. What's fixed after training is the <em>scoring function</em>, not the weights."},
+  {"q": "Who tells the model that <span lang=\"ar\">جلست</span> aligns with \"sat\"?",
+   "options": ["Nobody; it emerges from translating", "A human-labelled word alignment dataset", "A bilingual dictionary given upfront", "The Word2Vec vectors of both"],
+   "answer": 0,
+   "why": "The only training signal is \"produce the right translation.\" The alignment is whatever weighting helps with that, and it turns out to match linguistic intuition."},
+  {"q": "After adding attention, what still stops Seq2Seq training from running in parallel across the sentence?",
+   "options": ["The recurrence inside the RNNs", "The softmax over source positions", "The single fixed-size context vector", "The small scoring feed-forward network"],
+   "answer": 0,
+   "why": "Attention removed the single-c bottleneck. The recurrences h<sub>j</sub> = f(h<sub>j−1</sub>, x<sub>j</sub>) and s<sub>i</sub> = g(s<sub>i−1</sub>, …) are still chains. Removing them is the Transformer's job."}
+]
+</script>
+</div>
+
+<div class="recall" data-title="Recall: the three equations">
+  <p class="prompt">Without looking: write the three attention equations for decoder step i, give each a one-line meaning, then label which things are the query, the keys and the values.</p>
+  <template class="answer">
+    <ol>
+      <li><b>Score</b> e<sub>ij</sub> = a(s<sub>i−1</sub>, h<sub>j</sub>): how relevant source position j is to the next output word.</li>
+      <li><b>Weights</b> α<sub>ij</sub> = softmax<sub>j</sub>(e<sub>ij</sub>): turn scores into non-negative weights summing to 1.</li>
+      <li><b>Context</b> c<sub>i</sub> = Σ<sub>j</sub> α<sub>ij</sub> h<sub>j</sub>: a fresh blend of encoder states for this output word.</li>
+    </ol>
+    <p>Query = decoder state s<sub>i−1</sub>. Keys = encoder states h<sub>j</sub> (used in the score). Values = the same h<sub>j</sub> (used in the blend).</p>
+  </template>
+</div>
+
+<div class="source-box">
+  <span class="label">Primary source for this lesson</span>
+  <p><a href="https://arxiv.org/abs/1409.0473">Bahdanau, Cho &amp; Bengio, "Neural Machine Translation by Jointly Learning to Align and Translate"</a>. Read the abstract and §3.1, and look at Figure 2 (BLEU vs sentence length) and Figure 3 (alignment heatmaps). It is short and readable, and it is where attention starts. For the animated version, see the second half of <a href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/">Alammar's Seq2Seq post</a>. The textbook treatment is <a href="https://web.stanford.edu/~jurafsky/slp3/14.pdf">SLP3 §14.8</a>.</p>
+</div>
+
+<div class="ask-box">
+  <span class="label">Ask your teacher</span>
+  <p>This is the lesson to question hardest. Try asking me: <em>"Why use the previous decoder state and not the current one?"</em>, <em>"What does additive attention compute that a dot product doesn't?"</em> or <em>"Give me a new sentence and I'll predict the heatmap."</em></p>
+</div>
+
+<nav class="pager">
+  <a href="0003-seq2seq-bottleneck.html">← Seq2Seq</a>
+  <a href="0005-transformer-self-attention.html">Next: Self-attention and the Transformer →</a>
+</nav>
+
+</main>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/attention-lab.js"></script>
+</body>
+</html>

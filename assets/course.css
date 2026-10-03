@@ -1,0 +1,391 @@
+/* ============================================================
+   course.css — shared stylesheet for every lesson + reference.
+   Tufte-leaning: one readable column, margin notes on wide
+   screens, restrained colour used only to carry meaning.
+   ============================================================ */
+
+:root {
+  --paper: #fffdf7;
+  --ink: #1c1b19;
+  --ink-soft: #55524b;
+  --rule: #e4dfd2;
+  --panel: #f6f2e7;
+  --accent: #8a1c1c;      /* headings, links */
+  --fail: #b54708;        /* "what breaks" */
+  --fail-bg: #fdf1e7;
+  --fix: #1d5c8f;         /* "what fixes it" */
+  --fix-bg: #eaf2f9;
+  --good: #1f7a3f;
+  --good-bg: #e8f5ec;
+  --bad: #a3261e;
+  --bad-bg: #fbeaea;
+  --heat: 138, 28, 28;    /* rgb triplet for attention heatmaps */
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #171614;
+    --ink: #ebe7dd;
+    --ink-soft: #a8a396;
+    --rule: #34322d;
+    --panel: #22201c;
+    --accent: #e08a7a;
+    --fail: #f0a060;
+    --fail-bg: #2c2016;
+    --fix: #7fb6e6;
+    --fix-bg: #16222d;
+    --good: #6fcf8f;
+    --good-bg: #16261b;
+    --bad: #f08a80;
+    --bad-bg: #2d1817;
+    --heat: 224, 138, 122;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 19px; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 16px 4rem;
+}
+
+/* Text column + margin for sidenotes */
+main > * { max-width: 660px; }
+main > figure.wide, main > .wide { max-width: 1000px; }
+
+/* ---------- Type ---------- */
+.kicker {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.4rem;
+}
+h1 {
+  font-weight: 400;
+  font-size: 2.3rem;
+  line-height: 1.12;
+  margin: 0 0 0.6rem;
+}
+h2 {
+  font-weight: 400;
+  font-style: italic;
+  font-size: 1.5rem;
+  margin: 2.6rem 0 0.6rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.4rem;
+}
+h3 {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 1.8rem 0 0.4rem;
+}
+p { margin: 0 0 1rem; }
+.lede { font-size: 1.18rem; color: var(--ink-soft); }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+strong { font-weight: 600; }
+code, kbd, .mono { font-family: var(--mono); font-size: 0.84em; }
+code { background: var(--panel); padding: 0.05em 0.3em; border-radius: 3px; }
+ul, ol { padding-left: 1.3rem; margin: 0 0 1rem; }
+li { margin-bottom: 0.35rem; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+.muted { color: var(--ink-soft); }
+.small { font-size: 0.85rem; }
+[lang="ar"], .ar { font-family: "Segoe UI", "Noto Naskh Arabic", "Traditional Arabic", serif; font-size: 1.08em; }
+
+/* ---------- Sidenotes (margin on wide screens, inline on narrow) ---------- */
+.sidenote {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+}
+@media (min-width: 1000px) {
+  .sidenote {
+    float: right;
+    clear: right;
+    width: 280px;
+    margin-right: -320px;
+    margin-top: 0.2rem;
+    position: relative;
+  }
+}
+@media (max-width: 999px) {
+  .sidenote {
+    display: block;
+    border-left: 2px solid var(--rule);
+    padding: 0.2rem 0 0.2rem 0.7rem;
+    margin: 0.4rem 0 1rem;
+  }
+}
+
+/* ---------- Callouts ---------- */
+.callout {
+  border-left: 4px solid var(--rule);
+  background: var(--panel);
+  padding: 0.9rem 1.1rem;
+  margin: 1.4rem 0;
+  border-radius: 0 6px 6px 0;
+}
+.callout > :last-child { margin-bottom: 0; }
+.callout .label {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+.callout.fail { border-color: var(--fail); background: var(--fail-bg); }
+.callout.fail .label { color: var(--fail); }
+.callout.fix { border-color: var(--fix); background: var(--fix-bg); }
+.callout.fix .label { color: var(--fix); }
+.callout.key { border-color: var(--accent); }
+.callout.key .label { color: var(--accent); }
+
+/* ---------- Equations ---------- */
+.eq {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  text-align: center;
+  padding: 0.8rem 0.5rem;
+  margin: 1rem 0;
+  background: var(--panel);
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.eq .note { display: block; font-family: var(--sans); font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.3rem; white-space: normal; }
+var { font-style: italic; }
+
+/* ---------- Figures ---------- */
+figure { margin: 1.8rem 0; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+svg text { font-family: var(--sans); fill: var(--ink); }
+svg .soft { fill: var(--ink-soft); }
+svg .stroke { stroke: var(--ink); }
+svg .stroke-soft { stroke: var(--ink-soft); }
+svg .box { fill: var(--panel); stroke: var(--ink-soft); }
+svg .box-fix { fill: var(--fix-bg); stroke: var(--fix); }
+svg .box-fail { fill: var(--fail-bg); stroke: var(--fail); }
+svg .t-fix { fill: var(--fix); }
+svg .t-fail { fill: var(--fail); }
+svg .t-accent { fill: var(--accent); }
+
+/* ---------- Tables ---------- */
+table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: 0.88rem; }
+th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.table-scroll { overflow-x: auto; }
+
+/* ---------- Evolution chain (lesson 1 + reference) ---------- */
+.chain { list-style: none; padding: 0; margin: 1.6rem 0; counter-reset: step; }
+.chain > li {
+  position: relative;
+  padding: 0.9rem 1rem 0.9rem 3.2rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  margin-bottom: 2.1rem;
+  background: var(--paper);
+}
+.chain > li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute; left: 0.9rem; top: 0.85rem;
+  width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  background: var(--accent); color: var(--paper);
+  font-family: var(--sans); font-size: 0.8rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.chain > li:not(:last-child)::after {
+  content: "↓";
+  position: absolute; left: 1.35rem; bottom: -1.9rem;
+  font-size: 1.3rem; color: var(--fail);
+}
+.chain .name { font-weight: 600; font-size: 1.05rem; }
+.chain .year { font-family: var(--sans); font-size: 0.75rem; color: var(--ink-soft); margin-left: 0.4rem; }
+.chain .idea { margin: 0.25rem 0 0.4rem; }
+.chain .breaks {
+  font-family: var(--sans); font-size: 0.82rem; color: var(--fail);
+  border-top: 1px dashed var(--rule); padding-top: 0.4rem; margin: 0;
+}
+.chain .breaks b { font-weight: 700; }
+
+/* ---------- Quiz + recall widgets (assets/quiz.js) ---------- */
+.quiz-set, .recall {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1rem 1.1rem 0.6rem;
+  margin: 1.6rem 0;
+  background: var(--panel);
+}
+.quiz-set .set-title, .recall .set-title {
+  font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 700; color: var(--accent); margin-bottom: 0.6rem;
+}
+.quiz-q { margin-bottom: 1.2rem; }
+.quiz-q .q { font-weight: 600; margin-bottom: 0.5rem; }
+.quiz-q .opts { display: grid; gap: 0.4rem; }
+.quiz-q button.opt {
+  font: inherit; text-align: left;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--paper); color: var(--ink);
+  cursor: pointer;
+}
+.quiz-q button.opt:hover:not(:disabled) { border-color: var(--ink-soft); }
+.quiz-q button.opt:disabled { cursor: default; }
+.quiz-q button.opt.correct { border-color: var(--good); background: var(--good-bg); }
+.quiz-q button.opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+.quiz-q .why {
+  display: none; margin-top: 0.5rem; padding: 0.55rem 0.8rem;
+  border-left: 3px solid var(--ink-soft); background: var(--paper); border-radius: 0 6px 6px 0;
+  line-height: 1.45;
+}
+.quiz-q .why.show { display: block; }
+.quiz-q .why .verdict { font-weight: 700; }
+.quiz-q .why .verdict.ok { color: var(--good); }
+.quiz-q .why .verdict.no { color: var(--bad); }
+.quiz-score { font-size: 0.82rem; color: var(--ink-soft); padding: 0.3rem 0 0.6rem; }
+
+.recall .prompt { font-weight: 600; margin-bottom: 0.5rem; }
+.recall textarea {
+  width: 100%; min-height: 5.5rem; font: inherit; padding: 0.6rem;
+  border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink);
+  resize: vertical;
+}
+.recall .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; align-items: center; }
+.btn {
+  font: inherit; font-size: 0.85rem; padding: 0.4rem 0.8rem;
+  border: 1px solid var(--ink-soft); border-radius: 6px;
+  background: var(--paper); color: var(--ink); cursor: pointer;
+}
+.btn:hover { background: var(--rule); }
+.btn.primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.btn.selected { outline: 2px solid var(--accent); }
+.recall .model-answer {
+  display: none; margin: 0.6rem 0; padding: 0.7rem 0.9rem;
+  background: var(--paper); border-left: 3px solid var(--good); border-radius: 0 6px 6px 0;
+  line-height: 1.5;
+}
+.recall .model-answer.show { display: block; }
+.recall .model-answer p:last-child, .recall .model-answer ul:last-child { margin-bottom: 0; }
+
+/* ---------- Attention lab (assets/attention-lab.js) ---------- */
+.attn-lab {
+  font-family: var(--sans); font-size: 0.86rem;
+  border: 1px solid var(--rule); border-radius: 10px;
+  padding: 1rem 1.1rem; margin: 1.6rem 0; background: var(--panel);
+  overflow-x: auto;
+}
+.attn-lab .lab-title { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; }
+.attn-lab .presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; }
+.attn-lab .qrow { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.8rem; }
+.attn-lab .qrow input {
+  width: 4.2rem; font: inherit; padding: 0.25rem 0.35rem;
+  border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); color: var(--ink);
+}
+.attn-lab table { font-size: 0.82rem; margin: 0.4rem 0; }
+.attn-lab td, .attn-lab th { padding: 0.3rem 0.45rem; white-space: nowrap; }
+.attn-lab .bar-cell { width: 40%; min-width: 120px; }
+.attn-lab .bar { height: 0.8rem; background: var(--accent); border-radius: 2px; transition: width 0.25s; }
+.attn-lab .out { margin-top: 0.5rem; padding: 0.5rem 0.7rem; background: var(--paper); border-radius: 6px; }
+.attn-lab .steps { color: var(--ink-soft); font-size: 0.78rem; margin-top: 0.5rem; }
+
+.heatmap { border-collapse: separate; border-spacing: 3px; width: auto; margin: 0.6rem 0; }
+.heatmap td, .heatmap th { border: 0; text-align: center; padding: 0; font-size: 0.8rem; }
+.heatmap th { text-transform: none; letter-spacing: 0; font-family: var(--sans); color: var(--ink); font-weight: 500; padding: 0.2rem 0.4rem; }
+.heatmap th.rowh { text-align: right; }
+.heatmap td.cell { width: 3.4rem; height: 2.3rem; border-radius: 4px; font-family: var(--mono); font-size: 0.72rem; }
+
+/* ---------- MLM simulator (assets/mlm-sim.js) ---------- */
+.mlm-sim {
+  font-family: var(--sans); font-size: 0.86rem;
+  border: 1px solid var(--rule); border-radius: 10px;
+  padding: 1rem 1.1rem; margin: 1.6rem 0; background: var(--panel);
+}
+.mlm-sim .tokens { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.4rem 0 0.8rem; }
+.mlm-sim .tok {
+  font-family: var(--mono); font-size: 0.78rem;
+  padding: 0.2rem 0.45rem; border-radius: 4px; border: 1px solid var(--rule); background: var(--paper);
+  display: inline-flex; flex-direction: column; align-items: center; min-width: 2.2rem;
+}
+.mlm-sim .tok .tgt { font-size: 0.66rem; color: var(--ink-soft); margin-top: 0.1rem; }
+.mlm-sim .tok.special { color: var(--ink-soft); }
+.mlm-sim .tok.masked { border-color: var(--accent); background: var(--fail-bg); }
+.mlm-sim .tok.random { border-color: var(--fail); background: var(--fail-bg); }
+.mlm-sim .tok.kept { border-color: var(--fix); background: var(--fix-bg); }
+.mlm-sim .legend { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--ink-soft); margin: 0.4rem 0; }
+.mlm-sim .legend span::before { content: ""; display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; margin-right: 0.3rem; vertical-align: -1px; border: 1px solid; }
+.mlm-sim .legend .l-mask::before { background: var(--fail-bg); border-color: var(--accent); }
+.mlm-sim .legend .l-rand::before { background: var(--fail-bg); border-color: var(--fail); }
+.mlm-sim .legend .l-kept::before { background: var(--fix-bg); border-color: var(--fix); }
+.mlm-sim .tally { font-size: 0.8rem; color: var(--ink-soft); }
+
+/* ---------- Boxes at the end of every lesson ---------- */
+.source-box, .ask-box {
+  font-family: var(--sans); font-size: 0.88rem;
+  border-radius: 10px; padding: 0.9rem 1.1rem; margin: 1.4rem 0;
+}
+.source-box { border: 2px solid var(--accent); }
+.source-box .label, .ask-box .label {
+  display: block; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem;
+}
+.source-box .label { color: var(--accent); }
+.ask-box { background: var(--fix-bg); border: 1px solid var(--fix); }
+.ask-box .label { color: var(--fix); }
+.source-box p:last-child, .ask-box p:last-child { margin-bottom: 0; }
+
+/* ---------- Top + bottom navigation ---------- */
+nav.course {
+  font-family: var(--sans); font-size: 0.78rem;
+  display: flex; flex-wrap: wrap; gap: 0.3rem 1rem;
+  padding-bottom: 0.8rem; margin-bottom: 1.8rem; border-bottom: 1px solid var(--rule);
+  max-width: 1000px !important;
+}
+nav.course a { text-decoration: none; color: var(--ink-soft); }
+nav.course a:hover { color: var(--accent); }
+nav.course a.here { color: var(--accent); font-weight: 700; }
+nav.pager {
+  font-family: var(--sans); font-size: 0.9rem;
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2.6rem; padding-top: 1rem; border-top: 1px solid var(--rule);
+}
+
+/* ---------- Print ---------- */
+@media print {
+  :root { --paper: #fff; --panel: #f5f5f5; }
+  html { font-size: 11pt; }
+  main { padding: 0; max-width: none; }
+  main > * { max-width: none; }
+  .sidenote { float: none; width: auto; margin: 0.3rem 0 0.8rem; display: block; border-left: 2px solid #ccc; padding-left: 0.6rem; }
+  nav.course, nav.pager, .quiz-set, .recall, .attn-lab .presets, .attn-lab .qrow, .mlm-sim .row { display: none; }
+  h2 { break-after: avoid; }
+  figure, .callout, table, .eq { break-inside: avoid; }
+  a { color: inherit; }
+}
